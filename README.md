@@ -18,8 +18,8 @@ School_Guide_Book_Design/
 
 ## 사용 방법
 
-1. 깃허브로 임시 배포한 웹 브라우저에 접속
-- [https://rkdekdls.github.io/Flip_Book_Development/]
+1. 깃허브로 배포한 웹 브라우저에 접속
+- [https://rkdekdls.github.io/School_Guide_Book_Development/]
 2. 좌/우 화살표 버튼 또는 키보드 ⇦ / ⇨ 로 페이지 넘기기
 3. 하단 슬라이더로 원하는 페이지 이동 및 상태 확인 가능
 
