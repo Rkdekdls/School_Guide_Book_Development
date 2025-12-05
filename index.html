@@ -32,6 +32,8 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
       overflow: hidden;
+      will-change: transform;
+      transform: translateZ(0);
     }
 
     #flipbook .page {
@@ -93,6 +95,13 @@
       transform: scale(1);
       transform-origin: top left;
       background: white;
+      will-change: contents;
+      opacity: 0;
+      transition: opacity 0.3s ease-in;
+    }
+    
+    #flipbook .page iframe[data-loaded="true"] {
+      opacity: 1;
     }
     
     /* iframe 내부 페이지가 A4 크기로 보이도록 */
@@ -262,10 +271,17 @@
         const pageNum = index + 1;
         // 플립북 모드 파라미터 추가
         const iframe = $("<iframe></iframe>")
-          .attr("src", pageFile + "?flipbook=1")
+          .attr("data-src", pageFile + "?flipbook=1")
+          .attr("loading", "lazy")
           .css({
             "pointer-events": "auto"
           });
+        
+        // 첫 페이지와 두 번째 페이지는 즉시 로드
+        if (index === 0 || index === 1) {
+          iframe.attr("src", pageFile + "?flipbook=1");
+          iframe.attr("data-loaded", "true");
+        }
         
         const pageClass = (pageNum % 2 === 0) ? "even" : "odd";
         $("<div></div>")
@@ -274,6 +290,48 @@
           .append(iframe)
           .appendTo($flipbook);
       });
+    }
+    
+    // 인접 페이지 프리로딩 함수
+    function preloadAdjacentPages(currentPage) {
+      const currentIndex = currentPage - 1;
+      
+      // 현재 페이지 로드
+      const currentPageEl = $("#flipbook .page").eq(currentIndex);
+      const currentIframe = currentPageEl.find("iframe");
+      if (currentIframe.length && !currentIframe.attr("data-loaded")) {
+        const src = currentIframe.attr("data-src");
+        if (src) {
+          currentIframe.attr("src", src);
+          currentIframe.attr("data-loaded", "true");
+        }
+      }
+      
+      // 다음 페이지 프리로딩
+      if (currentIndex + 1 < PAGE_FILES.length) {
+        const nextPage = $("#flipbook .page").eq(currentIndex + 1);
+        const nextIframe = nextPage.find("iframe");
+        if (nextIframe.length && !nextIframe.attr("data-loaded")) {
+          const src = nextIframe.attr("data-src");
+          if (src) {
+            nextIframe.attr("src", src);
+            nextIframe.attr("data-loaded", "true");
+          }
+        }
+      }
+      
+      // 이전 페이지 프리로딩
+      if (currentIndex > 0) {
+        const prevPage = $("#flipbook .page").eq(currentIndex - 1);
+        const prevIframe = prevPage.find("iframe");
+        if (prevIframe.length && !prevIframe.attr("data-loaded")) {
+          const src = prevIframe.attr("data-src");
+          if (src) {
+            prevIframe.attr("src", src);
+            prevIframe.attr("data-loaded", "true");
+          }
+        }
+      }
     }
     
     // iframe 내부 페이지 스케일링 함수 (페이지 내부 스크립트가 처리하므로 여기서는 크기만 전달)
@@ -302,7 +360,12 @@
       let text = "";
       if (view && view.length > 1) {
         const pages = view.filter(p => p && p <= PAGE_FILES.length);
-        text = `${pages[0]}-${pages[pages.length - 1]} / ${PAGE_FILES.length}`;
+        // 같은 페이지 번호가 중복되거나 단일 페이지만 보이는 경우
+        if (pages.length === 0 || pages[0] === pages[pages.length - 1]) {
+          text = `${page || 1} / ${PAGE_FILES.length}`;
+        } else {
+          text = `${pages[0]}-${pages[pages.length - 1]} / ${PAGE_FILES.length}`;
+        }
       } else if (page) {
         text = `${page} / ${PAGE_FILES.length}`;
       }
@@ -402,7 +465,8 @@
           autoCenter: true,
           elevation: 50,
           gradients: true,
-          duration: 600,
+          duration: 1200,
+          easing: 'ease-in-out',
           when: {
             turning: function(event, page, view) {
               // 페이지가 넘어갈 때 그림자 효과 업데이트
@@ -414,6 +478,9 @@
                   $(this).addClass("odd");
                 }
               });
+              
+              // 다음/이전 페이지 프리로딩 (애니메이션 중에 미리 로드)
+              preloadAdjacentPages(page);
             }
           }
         });
@@ -442,12 +509,30 @@
       $("#pageSlider").attr("max", PAGE_FILES.length).val(1);
       updateFlipbookLayout();
 
+
       $("#flipbook").bind("turned", function (e, page, view) {
         updatePageUI(page, view);
+        // 페이지 전환 후 인접 페이지 프리로딩
+        preloadAdjacentPages(page);
       });
 
-      $("#prevBtn").click(() => $("#flipbook").turn("previous"));
-      $("#nextBtn").click(() => $("#flipbook").turn("next"));
+      $("#prevBtn").click(function() {
+        const currentPage = $("#flipbook").turn("page") || 1;
+        // 이전 페이지 프리로딩
+        if (currentPage > 1) {
+          preloadAdjacentPages(currentPage - 1);
+        }
+        $("#flipbook").turn("previous");
+      });
+      
+      $("#nextBtn").click(function() {
+        const currentPage = $("#flipbook").turn("page") || 1;
+        // 다음 페이지 프리로딩
+        if (currentPage < PAGE_FILES.length) {
+          preloadAdjacentPages(currentPage + 1);
+        }
+        $("#flipbook").turn("next");
+      });
 
       $("#pageSlider").on("input change", function () {
         const p = parseInt($(this).val(), 10);
