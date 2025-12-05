@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>고교 생활 가이드</title>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    .flipbook-wrapper {
+      position: relative;
+      margin: 10px auto 0 auto;
+      flex-shrink: 0;
+    }
+
+    #flipbook {
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      overflow: hidden;
+    }
+
+    #flipbook .page {
+      background-color: white;
+      overflow: hidden;
+    }
+    
+    /* 첫 번째 빈 페이지 스타일 */
+    #flipbook .page:first-child {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+    
+    /* 페이지 사이 그림자 효과 - 양쪽으로 자연스럽게 */
+    #flipbook .page.even {
+      position: relative;
+    }
+    
+    #flipbook .page.even::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(to left, 
+        rgba(0, 0, 0, 0.15) 0%, 
+        rgba(0, 0, 0, 0.08) 30%, 
+        rgba(0, 0, 0, 0.03) 60%, 
+        transparent 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    #flipbook .page.odd {
+      position: relative;
+    }
+    
+    #flipbook .page.odd::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(to right, 
+        rgba(0, 0, 0, 0.15) 0%, 
+        rgba(0, 0, 0, 0.08) 30%, 
+        rgba(0, 0, 0, 0.03) 60%, 
+        transparent 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    #flipbook .page iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      transform: scale(1);
+      transform-origin: top left;
+      background: white;
+    }
+    
+    /* iframe 내부 페이지가 A4 크기로 보이도록 */
+    #flipbook .page {
+      background: white;
+      overflow: hidden;
+    }
+
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1f2937;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(8px);
+    }
+    .nav-btn:hover { 
+      background: rgba(255, 255, 255, 1); 
+      transform: translateY(-50%) scale(1.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .nav-btn:active { 
+      transform: translateY(-50%) scale(0.95);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    .nav-btn:focus { outline: none; }
+
+    .prev-btn { 
+      left: -70px; 
+      padding-left: 2px;
+    }
+    .next-btn { right: -70px; }
+
+    @media (max-width: 600px) {
+      .prev-btn { left: 5px; }
+      .next-btn { right: 5px; }
+    }
+    
+    @media (min-width: 1200px) {
+      .prev-btn { left: -80px; }
+      .next-btn { right: -80px; }
+    }
+
+    /* 하단바 */
+    .bottom-bar {
+      width: auto;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #64748b;
+      font-size: 12px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      margin-top: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .page-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .page-slider:hover {
+      background: #cbd5e1;
+    }
+    .page-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s;
+    }
+    .page-slider::-webkit-slider-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      transform: scale(1.1);
+    }
+    .page-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s;
+    }
+    .page-slider::-moz-range-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      transform: scale(1.1);
+    }
+    .page-slider::-moz-range-track {
+      height: 3px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .page-label {
+      font-variant-numeric: tabular-nums;
+      min-width: 50px;
+      text-align: center;
+      color: #475569;
+      font-weight: 500;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flipbook-wrapper">
+    <div id="flipbook"></div>
+
+    <button class="nav-btn prev-btn" id="prevBtn">&#10094;</button>
+    <button class="nav-btn next-btn" id="nextBtn">&#10095;</button>
+  </div>
+
+  <!-- 하단바 (슬라이더 + 페이지 번호) -->
+  <div class="bottom-bar">
+    <input type="range" min="1" id="pageSlider" class="page-slider">
+    <span id="pageLabel" class="page-label"></span>
+  </div>
+
+  <script>
+    // 페이지 파일 목록 (자동으로 감지하거나 수동으로 설정)
+    const PAGE_FILES = [
+      'pages/page-title.html',
+      'pages/page-01.html',
+      'pages/page-02.html'
+      // 필요시 여기에 더 추가: 'pages/page-03.html', 'pages/page-04.html', ...
+    ];
+
+    // A4 비율: 210mm : 297mm = 1 : 1.414
+    const BASE_PAGE_WIDTH = 600;
+    const BASE_PAGE_HEIGHT = Math.round(600 * 1.414); // 848px (A4 비율)
+    let bookInitialized = false;
+
+    function createPages() {
+      const $flipbook = $("#flipbook");
+      PAGE_FILES.forEach((pageFile, index) => {
+        const pageNum = index + 1;
+        // 플립북 모드 파라미터 추가
+        const iframe = $("<iframe></iframe>")
+          .attr("src", pageFile + "?flipbook=1")
+          .css({
+            "pointer-events": "auto"
+          });
+        
+        const pageClass = (pageNum % 2 === 0) ? "even" : "odd";
+        $("<div></div>")
+          .addClass("page " + pageClass)
+          .attr("data-page", pageNum)
+          .append(iframe)
+          .appendTo($flipbook);
+      });
+    }
+    
+    // iframe 내부 페이지 스케일링 함수 (페이지 내부 스크립트가 처리하므로 여기서는 크기만 전달)
+    function notifyIframeSize(iframe, targetWidth, targetHeight) {
+      iframe.on('load', function() {
+        // iframe에 데이터 속성으로 크기 정보 전달
+        iframe.attr('data-width', targetWidth);
+        iframe.attr('data-height', targetHeight);
+        
+        // 페이지 내부 스크립트가 처리하도록 메시지 전송 시도
+        try {
+          iframe[0].contentWindow.postMessage({
+            type: 'flipbook-resize',
+            width: targetWidth,
+            height: targetHeight
+          }, '*');
+        } catch (e) {
+          // 크로스 오리진 문제로 실패할 수 있음
+        }
+      });
+    }
+
+    function updatePageUI(page, view) {
+      $("#pageSlider").val(page || 1);
+
+      let text = "";
+      if (view && view.length > 1) {
+        const pages = view.filter(p => p && p <= PAGE_FILES.length);
+        text = `${pages[0]}-${pages[pages.length - 1]} / ${PAGE_FILES.length}`;
+      } else if (page) {
+        text = `${page} / ${PAGE_FILES.length}`;
+      }
+      $("#pageLabel").text(text);
+    }
+
+    function updateFlipbookLayout() {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const isMobile = viewportWidth < 768;
+
+      // 여백 최소화: 좌우 화살표 버튼 공간 + 하단바 공간만 고려
+      const navBtnSpace = 140; // 좌우 화살표 버튼 공간
+      const bottomBarHeight = 40; // 하단바 높이
+      const verticalMargin = 20; // 상하 여백
+      
+      const maxBookWidth = viewportWidth - navBtnSpace;
+      const maxBookHeight = viewportHeight - bottomBarHeight - verticalMargin;
+
+      let pageWidth, pageHeight, bookWidth, bookHeight, displayMode;
+      // A4 비율 유지
+      const A4_RATIO = 297 / 210; // 1.414
+      
+      if (isMobile) {
+        // 모바일: 화면에 맞게 최대한 크게
+        pageWidth = maxBookWidth;
+        pageHeight = Math.round(pageWidth * A4_RATIO);
+        // 높이가 화면을 넘으면 높이 기준으로 조정
+        if (pageHeight > maxBookHeight) {
+          pageHeight = maxBookHeight;
+          pageWidth = Math.round(pageHeight / A4_RATIO);
+        }
+        bookWidth = pageWidth;
+        bookHeight = pageHeight;
+        displayMode = "single";
+        
+        // 플립북 크기를 아주 조금만 줄임 (97% 스케일)
+        const scaleFactor = 0.97;
+        bookWidth = Math.round(bookWidth * scaleFactor);
+        bookHeight = Math.round(bookHeight * scaleFactor);
+        pageWidth = Math.round(pageWidth * scaleFactor);
+        pageHeight = Math.round(pageHeight * scaleFactor);
+      } else {
+        // 데스크톱: A4 비율 유지하면서 화면에 최대한 크게 조정
+        const maxPageWidth = maxBookWidth / 2;
+        const maxPageHeight = maxBookHeight;
+        
+        // A4 비율을 유지하면서 화면에 맞게 조정
+        if (maxPageWidth * A4_RATIO <= maxPageHeight) {
+          pageWidth = maxPageWidth;
+          pageHeight = Math.round(pageWidth * A4_RATIO);
+        } else {
+          pageHeight = maxPageHeight;
+          pageWidth = Math.round(pageHeight / A4_RATIO);
+        }
+        
+        bookWidth = pageWidth * 2;
+        bookHeight = pageHeight;
+        displayMode = "double";
+        
+        // 플립북 크기를 아주 조금만 줄임 (97% 스케일)
+        const scaleFactor = 0.97;
+        bookWidth = Math.round(bookWidth * scaleFactor);
+        bookHeight = Math.round(bookHeight * scaleFactor);
+        pageWidth = Math.round(pageWidth * scaleFactor);
+        pageHeight = Math.round(pageHeight * scaleFactor);
+      }
+
+      $(".flipbook-wrapper").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook .page").css({ width: pageWidth, height: pageHeight });
+      
+      // 하단바 너비를 플립북 가로 길이보다 조금 더 길게
+      $(".bottom-bar").css({ width: bookWidth});
+      
+      // iframe 크기 정보 전달 (로드 후)
+      setTimeout(function() {
+        $("#flipbook .page iframe").each(function() {
+          const iframe = this;
+          try {
+            iframe.contentWindow.postMessage({
+              type: 'flipbook-resize',
+              width: pageWidth,
+              height: pageHeight
+            }, '*');
+          } catch (e) {
+            // 크로스 오리진 문제로 실패할 수 있음
+          }
+        });
+      }, 500);
+
+      if (!bookInitialized) {
+        $("#flipbook").turn({
+          width: bookWidth,
+          height: bookHeight,
+          display: displayMode,
+          autoCenter: true,
+          elevation: 50,
+          gradients: true,
+          duration: 600,
+          when: {
+            turning: function(event, page, view) {
+              // 페이지가 넘어갈 때 그림자 효과 업데이트
+              $("#flipbook .page").removeClass("even odd");
+              $("#flipbook .page").each(function(index) {
+                if ((index + 1) % 2 === 0) {
+                  $(this).addClass("even");
+                } else {
+                  $(this).addClass("odd");
+                }
+              });
+            }
+          }
+        });
+        
+        // 초기 그림자 효과 적용
+        $("#flipbook .page").each(function(index) {
+          if ((index + 1) % 2 === 0) {
+            $(this).addClass("even");
+          } else {
+            $(this).addClass("odd");
+          }
+        });
+        bookInitialized = true;
+      } else {
+        $("#flipbook").turn("size", bookWidth, bookHeight);
+        $("#flipbook").turn("display", displayMode);
+      }
+
+      const page = $("#flipbook").turn("page") || 1;
+      const view = $("#flipbook").turn("view");
+      updatePageUI(page, view);
+    }
+
+    $(document).ready(function () {
+      createPages();
+      $("#pageSlider").attr("max", PAGE_FILES.length).val(1);
+      updateFlipbookLayout();
+
+      $("#flipbook").bind("turned", function (e, page, view) {
+        updatePageUI(page, view);
+      });
+
+      $("#prevBtn").click(() => $("#flipbook").turn("previous"));
+      $("#nextBtn").click(() => $("#flipbook").turn("next"));
+
+      $("#pageSlider").on("input change", function () {
+        const p = parseInt($(this).val(), 10);
+        $("#flipbook").turn("page", p);
+      });
+
+      $(window).on("resize", updateFlipbookLayout);
+      updatePageUI(1, [1]);
+    });
+  </script>
+</body>
+</html>
