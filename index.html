@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Flipbook Viewer</title>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: sans-serif;
+    }
+
+    .flipbook-wrapper {
+      position: relative;
+      margin: 20px auto 8px auto;
+    }
+
+    #flipbook {
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      background: #ccc;
+      overflow: hidden;
+    }
+
+    #flipbook .page {
+      background-color: white;
+      background-size: contain;
+      background-position: center center;
+      background-repeat: no-repeat;
+    }
+
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .nav-btn:hover { background: rgba(0,0,0,0.7); transform: translateY(-50%) scale(1.05); }
+    .nav-btn:active { transform: translateY(-50%) scale(0.97); }
+    .nav-btn:focus { outline: none; }
+
+    .prev-btn { left: -80px; }
+    .next-btn { right: -80px; }
+
+    @media (max-width: 600px) {
+      .prev-btn { left: 5px; }
+      .next-btn { right: 5px; }
+    }
+
+    /* ⬇ 심플한 하단바 */
+    .bottom-bar {
+      width: 100%;
+      max-width: 1100px;
+      padding: 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #6b7280;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .page-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      outline: none;
+      cursor: pointer;
+    }
+    .page-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #6b7280;
+      cursor: pointer;
+      box-shadow: 0 0 0 2px #f9fafb;
+    }
+    .page-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #6b7280;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 0 2px #f9fafb;
+    }
+    .page-slider::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: #e5e7eb;
+    }
+
+    .page-label {
+      font-variant-numeric: tabular-nums;
+      min-width: 70px;
+      text-align: right;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flipbook-wrapper">
+    <div id="flipbook"></div>
+
+    <button class="nav-btn prev-btn" id="prevBtn">&#10094;</button>
+    <button class="nav-btn next-btn" id="nextBtn">&#10095;</button>
+  </div>
+
+  <!-- ⬇ 하단바 (슬라이더 + 페이지 번호) -->
+  <div class="bottom-bar">
+    <input type="range" min="1" id="pageSlider" class="page-slider">
+    <span id="pageLabel" class="page-label"></span>
+  </div>
+
+  <script>
+    const TOTAL_PAGES = 28;
+    const IMAGE_BASE_PATH = "resources";
+    const IMAGE_EXT = "jpg";
+    const BASE_PAGE_WIDTH = 500;
+    const BASE_PAGE_HEIGHT = 700;
+    let bookInitialized = false;
+
+    function createPages() {
+      const $flipbook = $("#flipbook");
+      for (let i = 1; i <= TOTAL_PAGES; i++) {
+        const pageNum = i.toString().padStart(2, '0'); // 두 자리 숫자 형식 (01, 02, ...)
+        const img = IMAGE_BASE_PATH ? `${IMAGE_BASE_PATH}/${pageNum}.${IMAGE_EXT}` : `${pageNum}.${IMAGE_EXT}`;
+        $("<div></div>")
+          .addClass("page")
+          .attr("data-page", i)
+          .css("background-image", `url('${img}')`)
+          .appendTo($flipbook);
+      }
+    }
+
+    function updatePageUI(page, view) {
+      $("#pageSlider").val(page || 1);
+
+      let text = "";
+      if (view && view.length > 1) {
+        const pages = view.filter(p => p && p <= TOTAL_PAGES);
+        text = `${pages[0]}-${pages[pages.length - 1]} / ${TOTAL_PAGES}`;
+      } else if (page) {
+        text = `${page} / ${TOTAL_PAGES}`;
+      }
+      $("#pageLabel").text(text);
+    }
+
+    function updateFlipbookLayout() {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const isMobile = viewportWidth < 768;
+
+      const maxBookWidth = viewportWidth - 40;
+      const maxBookHeight = viewportHeight - 140;
+
+      let pageWidth, pageHeight, bookWidth, bookHeight, displayMode;
+      if (isMobile) {
+        pageWidth = Math.min(maxBookWidth, 480);
+        pageHeight = Math.round(pageWidth * (BASE_PAGE_HEIGHT / BASE_PAGE_WIDTH));
+        bookWidth = pageWidth;
+        bookHeight = pageHeight;
+        displayMode = "single";
+      } else {
+        pageWidth = Math.min(maxBookWidth / 2, BASE_PAGE_WIDTH);
+        pageHeight = Math.round(pageWidth * (BASE_PAGE_HEIGHT / BASE_PAGE_WIDTH));
+        bookWidth = pageWidth * 2;
+        bookHeight = pageHeight;
+        displayMode = "double";
+      }
+
+      $(".flipbook-wrapper").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook .page").css({ width: pageWidth, height: pageHeight });
+
+      if (!bookInitialized) {
+        $("#flipbook").turn({
+          width: bookWidth,
+          height: bookHeight,
+          display: displayMode,
+          autoCenter: true,
+          elevation: 50,
+          gradients: true,
+          duration: 600,
+        });
+        bookInitialized = true;
+      } else {
+        $("#flipbook").turn("size", bookWidth, bookHeight);
+        $("#flipbook").turn("display", displayMode);
+      }
+
+      const page = $("#flipbook").turn("page") || 1;
+      const view = $("#flipbook").turn("view");
+      updatePageUI(page, view);
+    }
+
+    $(document).ready(function () {
+      createPages();
+      $("#pageSlider").attr("max", TOTAL_PAGES).val(1);
+      updateFlipbookLayout();
+
+      $("#flipbook").bind("turned", function (e, page, view) {
+        updatePageUI(page, view);
+      });
+
+      $("#prevBtn").click(() => $("#flipbook").turn("previous"));
+      $("#nextBtn").click(() => $("#flipbook").turn("next"));
+
+      $("#pageSlider").on("input change", function () {
+        const p = parseInt($(this).val(), 10);
+        $("#flipbook").turn("page", p);
+      });
+
+      $(window).on("resize", updateFlipbookLayout);
+      updatePageUI(1, [1]);
+    });
+  </script>
+</body>
+</html>
