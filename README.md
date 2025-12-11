@@ -10,8 +10,10 @@ School_Guide_Book_Development/
 ├── index.html                # 플립북 뷰어 메인 파일
 ├── pages/                    # 페이지 파일들
 │   ├── page-title.html       # 표지 페이지
-│   ├── page-01.html          # 첫번째 페이지
-│   └── page-02.html          # 두번째 페이지
+│   ├── page-index-01.html    # 목차 페이지 1
+│   ├── page-index-02.html    # 목차 페이지 2
+│   ├── page-01.html          # 내용 페이지 1
+│   └── page-02.html          # 내용 페이지 2
 ├── styles.css                # 공통 스타일시트
 └── README.md                 # 프로젝트 설명서
 ```

@@ -111,7 +111,7 @@
     }
 
     .nav-btn {
-      position: absolute;
+      position: fixed;
       top: 50%;
       transform: translateY(-50%);
       width: 44px;
@@ -125,7 +125,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10;
+      z-index: 1000;
       transition: all 0.2s ease;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       backdrop-filter: blur(8px);
@@ -142,19 +142,7 @@
     .nav-btn:focus { outline: none; }
 
     .prev-btn { 
-      left: -70px; 
       padding-left: 2px;
-    }
-    .next-btn { right: -70px; }
-
-    @media (max-width: 600px) {
-      .prev-btn { left: 5px; }
-      .next-btn { right: 5px; }
-    }
-    
-    @media (min-width: 1200px) {
-      .prev-btn { left: -80px; }
-      .next-btn { right: -80px; }
     }
 
     /* 하단바 */
@@ -418,12 +406,19 @@
       const viewportHeight = window.innerHeight;
       const isMobile = viewportWidth < 768;
 
-      // 여백 최소화: 좌우 화살표 버튼 공간 + 하단바 공간만 고려
-      const navBtnSpace = 140; // 좌우 화살표 버튼 공간
+      // 화살표는 fixed로 배치되므로, 플립북 크기 계산 시 화살표 공간은 고려하지 않음
+      // 단, 화면 가장자리에 최소 여백 확보 (화살표 여백 + 화면 여백)
+      const ARROW_MARGIN = 30;
+      const SCREEN_MARGIN = 10;
+      const ARROW_WIDTH = 44;
+      const navBtnSpace = (ARROW_MARGIN + ARROW_WIDTH + SCREEN_MARGIN) * 2; // 양쪽 합산
+      
       const bottomBarHeight = 40; // 하단바 높이
       const verticalMargin = 20; // 상하 여백
       
-      const maxBookWidth = viewportWidth - navBtnSpace;
+      // 화살표가 fixed로 배치되므로, 실제로는 플립북이 화면 전체를 사용 가능
+      // 하지만 화살표와 겹치지 않도록 최소한의 여백만 확보
+      const maxBookWidth = Math.max(viewportWidth - navBtnSpace, viewportWidth * 0.9);
       const maxBookHeight = viewportHeight - bottomBarHeight - verticalMargin;
 
       let pageWidth, pageHeight, bookWidth, bookHeight, displayMode;
@@ -543,6 +538,55 @@
       const page = $("#flipbook").turn("page") || 1;
       const view = $("#flipbook").turn("view");
       updatePageUI(page, view);
+      
+      // 화살표 위치를 플립북 밖에 일정한 여백을 두고 동적으로 계산
+      updateNavButtonPosition();
+    }
+    
+    // 화살표 버튼 위치를 플립북 밖에 일정한 여백을 두고 계산
+    function updateNavButtonPosition() {
+      const ARROW_MARGIN = 30; // 플립북과 화살표 사이 여백 (px)
+      const MIN_SCREEN_MARGIN = 10; // 화면 가장자리 최소 여백 (px)
+      
+      const $flipbookWrapper = $(".flipbook-wrapper");
+      const $prevBtn = $("#prevBtn");
+      const $nextBtn = $("#nextBtn");
+      
+      if ($flipbookWrapper.length && $prevBtn.length && $nextBtn.length) {
+        const wrapperRect = $flipbookWrapper[0].getBoundingClientRect();
+        const wrapperLeft = wrapperRect.left;
+        const wrapperRight = wrapperRect.right;
+        const wrapperTop = wrapperRect.top;
+        const wrapperHeight = wrapperRect.height;
+        
+        // 화면 너비
+        const viewportWidth = window.innerWidth;
+        
+        // 이전 버튼 위치 계산: 플립북 왼쪽 밖에 일정한 여백
+        let prevLeft = wrapperLeft - ARROW_MARGIN - 44; // 버튼 너비 44px
+        // 화면을 벗어나면 화면 가장자리에 배치
+        if (prevLeft < MIN_SCREEN_MARGIN) {
+          prevLeft = MIN_SCREEN_MARGIN;
+        }
+        
+        // 다음 버튼 위치 계산: 플립북 오른쪽 밖에 일정한 여백
+        let nextLeft = wrapperRight + ARROW_MARGIN;
+        // 화면을 벗어나면 화면 가장자리에 배치
+        if (nextLeft + 44 > viewportWidth - MIN_SCREEN_MARGIN) {
+          nextLeft = viewportWidth - 44 - MIN_SCREEN_MARGIN;
+        }
+        
+        // 화살표 버튼 위치 설정
+        $prevBtn.css({
+          left: prevLeft + 'px',
+          top: (wrapperTop + wrapperHeight / 2) + 'px'
+        });
+        
+        $nextBtn.css({
+          left: nextLeft + 'px',
+          top: (wrapperTop + wrapperHeight / 2) + 'px'
+        });
+      }
     }
 
     $(document).ready(function () {
@@ -556,6 +600,8 @@
         updatePageUI(page, view);
         // 페이지 전환 후 인접 페이지 프리로딩
         preloadAdjacentPages(page);
+        // 페이지 전환 후 화살표 위치 업데이트 (애니메이션 완료 후)
+        setTimeout(updateNavButtonPosition, 100);
       });
 
       $("#prevBtn").click(function() {
@@ -583,8 +629,15 @@
         $("#flipbook").turn("page", targetPage);
       });
 
-      $(window).on("resize", updateFlipbookLayout);
+      $(window).on("resize", function() {
+        updateFlipbookLayout();
+        // 리사이즈 후 화살표 위치 다시 계산
+        setTimeout(updateNavButtonPosition, 100);
+      });
       updatePageUI(1, [1]);
+      
+      // 초기 화살표 위치 설정
+      setTimeout(updateNavButtonPosition, 200);
     });
   </script>
 </body>
