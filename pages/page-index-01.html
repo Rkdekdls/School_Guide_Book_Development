@@ -77,37 +77,6 @@
       }
     })();
     
-    // CONTENTS의 "S" 오른쪽 중앙에서 막대기 시작하도록 조정
-    (function() {
-      function adjustTopLine() {
-        const contentsElement = document.querySelector('.toc-sidebar-contents');
-        const topLine = document.querySelector('.toc-top-line');
-        
-        if (contentsElement && topLine) {
-          const rect = contentsElement.getBoundingClientRect();
-          const pageRect = document.querySelector('.toc-page').getBoundingClientRect();
-          
-          // CONTENTS 텍스트의 오른쪽 끝 위치 계산
-          const contentsRight = rect.right - pageRect.left;
-          
-          // 막대기를 CONTENTS 오른쪽에서 약간 떨어뜨려서 시작하도록 설정 (약 12mm)
-          const offset = 35 * 3.7795; // 12mm를 픽셀로 변환
-          topLine.style.left = (contentsRight + offset) + 'px';
-        }
-      }
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          setTimeout(adjustTopLine, 100);
-        });
-      } else {
-        setTimeout(adjustTopLine, 100);
-      }
-      
-      window.addEventListener('resize', function() {
-        setTimeout(adjustTopLine, 100);
-      });
-    })();
   </script>
   <style>
     .toc-page {
@@ -116,13 +85,16 @@
       height: 100%;
       width: 100%;
       position: relative;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0;
     }
     
-    /* 위쪽 가로선 - CONTENTS 제목 오른쪽에서 시작 */
+    /* 위쪽 가로선 - CONTENTS 제목 오른쪽에서 시작 (고정 위치) */
     .toc-top-line {
       position: absolute;
       top: 10mm;
-      left: 0mm;            /* 실제 위치는 스크립트에서 조정 */
+      left: 100mm;           /* sidebar(50mm) 오른쪽에서 약 20mm 떨어진 고정 위치 */
       width: 100mm;         /* 길이 고정 */
       height: 9px;
       background-color: #2563EB;
@@ -148,7 +120,8 @@
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
-      position: relative;
+      position: absolute;
+      left: 0;
       padding: 10mm 0 0 0mm;
       z-index: 2;
     }
@@ -163,16 +136,20 @@
       height: auto;
       transform: scaleY(1.5);
       transform-origin: top;
-      margin-left: 3mm;
+      margin-left: 2mm;
     }
     
     /* 콘텐츠 영역 */
     .toc-content {
       flex: 1;
+      max-width: 185mm;
+      width: calc(100% - 60mm);
       display: flex;
       flex-direction: column;
-      padding: 26mm 5mm 15mm 10mm;
+      padding: 28mm 3mm 8mm 3mm;
       overflow-y: auto;
+      margin: 0 auto;
+      box-sizing: border-box;
     }
     
     /* 각 파트 블록 */
@@ -194,18 +171,18 @@
       padding-bottom: 2.5mm;
       border-bottom: 1px solid #2563EB;
       display: flex;
-      justify-content: flex-end;
       align-items: baseline;
+      gap: 3mm;
       font-family: 'Arial', sans-serif;
     }
     
     .toc-part-title-text {
-      margin-right: auto;
+      flex: 1;
     }
     
     .toc-part-title-page {
-      margin-left: 5mm;
-      min-width: 25px;
+      margin-left: 1mm;
+      min-width: 18px;
       text-align: right;
     }
     
@@ -222,22 +199,22 @@
       line-height: 1.6;
       margin-bottom: 1.4mm;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: baseline;
       font-family: 'Arial', sans-serif;
+      gap: 5mm;
     }
     
     .toc-item-text {
-      margin-right: auto;
       text-align: left;
       font-size: 13px;
     }
     
     .toc-item-page {
-      margin-left: 12mm;
+      margin-left: 0;
       font-weight: 400;
-      min-width: 26px;
-      text-align: right;
+      min-width: 24px;
+      text-align: left;
     }
     
     /* 챕터 스타일 */
@@ -246,7 +223,7 @@
       font-weight: 700;
       margin-top: 2.2mm;
       margin-bottom: 1.2mm;
-      padding-left: 4mm;
+      padding-left: 0;
     }
     
     .toc-item.toc-chapter:first-child {
@@ -257,7 +234,7 @@
     .toc-item.toc-section {
       font-size: 11.5px;
       font-weight: 400;
-      padding-left: 8mm;
+      padding-left: 0;
       margin-bottom: 1.8mm;
     }
     
@@ -269,7 +246,7 @@
 </head>
 <body class="page-title-body">
   <div class="page page-title-page">
-    <div class="toc-page">
+      <div class="toc-page">
       <!-- 위쪽 가로선 -->
       <div class="toc-top-line"></div>
       

@@ -77,38 +77,6 @@
       }
     })();
     
-    // CONTENTS의 "C" 왼쪽에서 막대기 끝나도록 조정
-    (function() {
-      function adjustTopLine() {
-        const contentsElement = document.querySelector('.toc-sidebar-contents');
-        const topLine = document.querySelector('.toc-top-line');
-        
-        if (contentsElement && topLine) {
-          const rect = contentsElement.getBoundingClientRect();
-          const pageRect = document.querySelector('.toc-page').getBoundingClientRect();
-          
-          // CONTENTS 텍스트의 왼쪽 시작 위치 계산
-          const contentsLeft = rect.left - pageRect.left;
-          
-          // 막대기를 CONTENTS 왼쪽에서 약간 떨어뜨려서 끝나도록 설정 (약 5mm)
-          const offset = -20 * 3.7795; // 5mm를 픽셀로 변환
-          const lineWidth = 120 * 3.7795; // 120mm를 픽셀로 변환
-          topLine.style.left = (contentsLeft - offset - lineWidth) + 'px';
-        }
-      }
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          setTimeout(adjustTopLine, 100);
-        });
-      } else {
-        setTimeout(adjustTopLine, 100);
-      }
-      
-      window.addEventListener('resize', function() {
-        setTimeout(adjustTopLine, 100);
-      });
-    })();
   </script>
   <style>
     .toc-page {
@@ -117,9 +85,12 @@
       height: 100%;
       width: 100%;
       position: relative;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0;
     }
     
-    /* 아래쪽 막대 - CONTENTS 왼쪽에서 끝나도록 이동 */
+    /* 하단 막대 - 고정 위치 */
     .toc-top-line {
       position: absolute;
       bottom: 5mm;
@@ -131,7 +102,7 @@
       z-index: 1;
     }
     
-    /* 아래쪽 가로선 - 상단 막대 위치로 이동 */
+    /* 상단 막대 - 고정 위치 */
     .toc-page::after {
       content: '';
       position: absolute;
@@ -150,7 +121,8 @@
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-end;
-      position: relative;
+      position: absolute;
+      left: 0;
       padding: 0 0 15mm 0mm;
       z-index: 2;
     }
@@ -165,18 +137,20 @@
       height: auto;
       transform: scaleY(1.5);
       transform-origin: top;
-      margin-left: 90mm;
+      margin-left: 0;
     }
     
     /* 콘텐츠 영역 */
     .toc-content {
       flex: 1;
-      max-width: none;
+      max-width: 185mm;
+      width: calc(100% - 60mm);
       display: flex;
       flex-direction: column;
-      padding: 26mm 5mm 15mm 10mm;
+      padding: 28mm 3mm 8mm 3mm;
       overflow-y: auto;
-      margin-left: 0;
+      margin: 0 auto;
+      box-sizing: border-box;
     }
     
     /* 각 파트 블록 */
@@ -226,22 +200,22 @@
       line-height: 1.6;
       margin-bottom: 1.4mm;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: baseline;
       font-family: 'Arial', sans-serif;
+      gap: 5mm;
     }
     
     .toc-item-text {
-      margin-right: auto;
       text-align: left;
       font-size: 13px;
     }
     
     .toc-item-page {
-      margin-left: 4mm;
+      margin-left: 0;
       font-weight: 400;
       min-width: 24px;
-      text-align: right;
+      text-align: left;
     }
     
     /* 챕터 스타일 */
@@ -250,7 +224,7 @@
       font-weight: 700;
       margin-top: 2.2mm;
       margin-bottom: 1.2mm;
-      padding-left: 4mm;
+      padding-left: 0;
     }
     
     .toc-item.toc-chapter:first-child {
@@ -261,7 +235,7 @@
     .toc-item.toc-section {
       font-size: 11.5px;
       font-weight: 400;
-      padding-left: 8mm;
+      padding-left: 0;
       margin-bottom: 1.8mm;
     }
     

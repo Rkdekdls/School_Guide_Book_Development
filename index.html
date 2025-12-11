@@ -356,8 +356,47 @@
       });
     }
 
+    // 페이지 범위에 따른 슬라이더 위치 변환 함수들
+    function pageToSliderPos(page) {
+      // 페이지 번호를 슬라이더 위치로 변환
+      // 1 -> 1 (시작점)
+      // 2-3 -> 2 (중앙, 3페이지 기준)
+      // 4-5 -> 3 (끝점, 5페이지 기준)
+      if (page === 1) {
+        return 1;
+      } else if (page === 2 || page === 3) {
+        return 2;
+      } else if (page >= 4) {
+        return 3;
+      }
+      return 1;
+    }
+    
+    function sliderPosToPage(sliderPos) {
+      // 슬라이더 위치를 페이지 번호로 변환
+      // 1 -> 1페이지
+      // 2 -> 3페이지
+      // 3 -> 5페이지 (또는 최대 페이지)
+      if (sliderPos === 1) {
+        return 1;
+      } else if (sliderPos === 2) {
+        return 3;
+      } else if (sliderPos === 3) {
+        // 최대 페이지가 5 이상이면 5, 그보다 작으면 최대 페이지
+        return Math.min(5, PAGE_FILES.length);
+      }
+      return 1;
+    }
+    
+    function getSliderMax() {
+      // 슬라이더 최대값은 항상 3 (시작, 중앙, 끝)
+      return 3;
+    }
+
     function updatePageUI(page, view) {
-      $("#pageSlider").val(page || 1);
+      // 페이지 범위에 따라 슬라이더 위치 계산
+      const sliderPos = pageToSliderPos(page || 1);
+      $("#pageSlider").val(sliderPos);
 
       let text = "";
       if (view && view.length > 1) {
@@ -508,7 +547,8 @@
 
     $(document).ready(function () {
       createPages();
-      $("#pageSlider").attr("max", PAGE_FILES.length).val(1);
+      // 슬라이더 최대값은 3 (시작, 중앙, 끝)
+      $("#pageSlider").attr("max", getSliderMax()).val(1);
       updateFlipbookLayout();
 
 
@@ -537,8 +577,10 @@
       });
 
       $("#pageSlider").on("input change", function () {
-        const p = parseInt($(this).val(), 10);
-        $("#flipbook").turn("page", p);
+        const sliderPos = parseInt($(this).val(), 10);
+        // 슬라이더 위치를 페이지 번호로 변환
+        const targetPage = sliderPosToPage(sliderPos);
+        $("#flipbook").turn("page", targetPage);
       });
 
       $(window).on("resize", updateFlipbookLayout);
