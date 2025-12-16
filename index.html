@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>고교 생활 가이드</title>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    .flipbook-wrapper {
+      position: relative;
+      margin: 10px auto 0 auto;
+      flex-shrink: 0;
+    }
+
+    /* 중앙 경계선 그림자 기둥 */
+    .flipbook-wrapper::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 13px;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(0, 0, 0, 0.28) 55%,
+        rgba(0, 0, 0, 0) 70%,
+        rgba(0, 0, 0, 0) 100%
+      );
+      filter: blur(3px);
+      opacity: 0.8;
+      z-index: 1;
+      transition: opacity 0.2s ease-out;
+    }
+
+    /* 넘길 때 기둥 숨김 */
+    .flipbook-wrapper.turning::after {
+      opacity: 0;
+      transition: opacity 0.15s ease-in;
+    }
+
+    /* 단면(모바일)에서는 숨김 */
+    @media (max-width: 767px) {
+      .flipbook-wrapper::after {
+        display: none;
+      }
+    }
+
+    #flipbook {
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      overflow: hidden;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    /* ✅ 페이지 기본 */
+    #flipbook .page {
+      position: relative;
+      background: #fff;
+      overflow: hidden;
+      z-index: 2; /* 페이지가 중앙 그림자보다 위로 오도록 */
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* 첫 번째 빈 페이지 스타일 */
+    #flipbook .page:first-child {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    /* 페이지 모서리 입체 그림자 제거됨 */
+
+    #flipbook .page iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      transform: scale(1);
+      transform-origin: top left;
+      background: white;
+      will-change: transform, opacity;
+      opacity: 0;
+      transition: opacity 0.2s ease-in;
+      position: relative;
+      z-index: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    #flipbook .page iframe[data-ready="true"] {
+      opacity: 1;
+    }
+
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1f2937;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(8px);
+    }
+    .nav-btn:hover { 
+      background: rgba(255, 255, 255, 1); 
+      transform: translateY(-50%) scale(1.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .nav-btn:active { 
+      transform: translateY(-50%) scale(0.95);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    .nav-btn:focus { outline: none; }
+
+    .prev-btn { padding-left: 2px; }
+
+    /* 하단바 */
+    .bottom-bar {
+      width: auto;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #64748b;
+      font-size: 12px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      margin-top: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .page-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .page-slider:hover { background: #cbd5e1; }
+
+    .page-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s;
+    }
+    .page-slider::-webkit-slider-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      transform: scale(1.1);
+    }
+
+    .page-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      transition: all 0.2s;
+    }
+    .page-slider::-moz-range-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      transform: scale(1.1);
+    }
+    .page-slider::-moz-range-track {
+      height: 3px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .page-label {
+      font-variant-numeric: tabular-nums;
+      min-width: 50px;
+      text-align: center;
+      color: #475569;
+      font-weight: 500;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flipbook-wrapper">
+    <div id="flipbook"></div>
+
+    <button class="nav-btn prev-btn" id="prevBtn">&#10094;</button>
+    <button class="nav-btn next-btn" id="nextBtn">&#10095;</button>
+  </div>
+
+  <div class="bottom-bar">
+    <input type="range" min="1" id="pageSlider" class="page-slider">
+    <span id="pageLabel" class="page-label"></span>
+  </div>
+
+  <script>
+    const PAGE_FILES = [
+      'pages/00.표지/title.html',
+      'pages/01.목차/index-01.html',
+      'pages/01.목차/index-02.html',
+      'pages/02.파트/001.파트1/part1-01.html',
+      'pages/02.파트/001.파트1/part1-02.html',
+      'pages/02.파트/001.파트1/part1-03.html',
+      'pages/02.파트/001.파트1/part1-04.html',
+      'pages/02.파트/001.파트1/part1-05.html',
+      'pages/02.파트/001.파트1/part1-06.html'
+    ];
+
+    const BASE_PAGE_WIDTH = 600;
+    const BASE_PAGE_HEIGHT = Math.round(600 * 1.414);
+    let bookInitialized = false;
+
+    function setupIframeLoadHandler(iframe) {
+      const $iframe = $(iframe);
+      if ($iframe.attr("data-handler-setup") === "true") return;
+      $iframe.attr("data-handler-setup", "true");
+      
+      iframe.addEventListener("load", function() {
+        // iframe이 완전히 로드된 후 약간의 지연을 두어 렌더링 완료 보장
+        setTimeout(function() {
+          $iframe.attr("data-ready", "true");
+        }, 50);
+      }, { once: true });
+    }
+
+    function createPages() {
+      const $flipbook = $("#flipbook");
+      PAGE_FILES.forEach((pageFile, index) => {
+        const pageNum = index + 1;
+
+        const iframe = $("<iframe></iframe>")
+          .attr("data-src", pageFile + "?flipbook=1")
+          .attr("loading", "lazy")
+          .css({ "pointer-events": "auto" });
+
+        if (index === 0 || index === 1) {
+          iframe.attr("src", pageFile + "?flipbook=1");
+          iframe.attr("data-src-loaded", "true");
+          setupIframeLoadHandler(iframe[0]);
+          // 초기 페이지는 즉시 표시 (이미 로드되어 있을 가능성이 높음)
+          setTimeout(function() {
+            iframe.attr("data-ready", "true");
+          }, 100);
+        }
+        
+        // 마지막 페이지도 미리 로드 (9페이지가 보이도록)
+        if (index === PAGE_FILES.length - 1) {
+          setTimeout(function() {
+            if (!iframe.attr("data-src-loaded")) {
+              const src = iframe.attr("data-src");
+              if (src) {
+                setupIframeLoadHandler(iframe[0]);
+                iframe.attr("src", src);
+                iframe.attr("data-src-loaded", "true");
+              }
+            }
+          }, 500);
+        }
+
+        const pageClass = (pageNum % 2 === 0) ? "even" : "odd";
+        $("<div></div>")
+          .addClass("page " + pageClass)
+          .attr("data-page", pageNum)
+          .append(iframe)
+          .appendTo($flipbook);
+      });
+    }
+
+    function preloadAdjacentPages(currentPage) {
+      const currentIndex = currentPage - 1;
+
+      // 현재 페이지 로드
+      const currentPageEl = $("#flipbook .page").eq(currentIndex);
+      const currentIframe = currentPageEl.find("iframe");
+      if (currentIframe.length && !currentIframe.attr("data-src-loaded")) {
+        const src = currentIframe.attr("data-src");
+        if (src) {
+          const iframeElement = currentIframe[0];
+          setupIframeLoadHandler(iframeElement);
+          currentIframe.attr("src", src);
+          currentIframe.attr("data-src-loaded", "true");
+        }
+      }
+
+      // 다음 페이지 미리 로드
+      if (currentIndex + 1 < PAGE_FILES.length) {
+        const nextPage = $("#flipbook .page").eq(currentIndex + 1);
+        const nextIframe = nextPage.find("iframe");
+        if (nextIframe.length && !nextIframe.attr("data-src-loaded")) {
+          const src = nextIframe.attr("data-src");
+          if (src) {
+            const iframeElement = nextIframe[0];
+            setupIframeLoadHandler(iframeElement);
+            nextIframe.attr("src", src);
+            nextIframe.attr("data-src-loaded", "true");
+          }
+        }
+      }
+
+      // 이전 페이지 미리 로드
+      if (currentIndex > 0) {
+        const prevPage = $("#flipbook .page").eq(currentIndex - 1);
+        const prevIframe = prevPage.find("iframe");
+        if (prevIframe.length && !prevIframe.attr("data-src-loaded")) {
+          const src = prevIframe.attr("data-src");
+          if (src) {
+            const iframeElement = prevIframe[0];
+            setupIframeLoadHandler(iframeElement);
+            prevIframe.attr("src", src);
+            prevIframe.attr("data-src-loaded", "true");
+          }
+        }
+      }
+    }
+
+    function isMobileView() {
+      return window.innerWidth < 768;
+    }
+
+    function pageToSliderPos(page, isMobile) {
+      if (isMobile) return Math.max(1, Math.min(page || 1, PAGE_FILES.length));
+      if (page === 1) return 1;
+      return Math.ceil((page - 1) / 2) + 1;
+    }
+
+    function sliderPosToPage(sliderPos, isMobile) {
+      if (isMobile) return Math.max(1, Math.min(sliderPos || 1, PAGE_FILES.length));
+      if (sliderPos === 1) return 1;
+      return (sliderPos - 1) * 2;
+    }
+
+    function getSliderMax(isMobile) {
+      if (isMobile) return PAGE_FILES.length;
+      if (PAGE_FILES.length === 1) return 1;
+      return Math.ceil((PAGE_FILES.length - 1) / 2) + 1;
+    }
+
+    function updatePageUI(page, view) {
+      const isMobile = isMobileView();
+      const sliderPos = pageToSliderPos(page || 1, isMobile);
+      $("#pageSlider").val(sliderPos);
+
+      const sliderMax = getSliderMax(isMobile);
+      $("#pageSlider").attr("max", sliderMax);
+
+      let text = "";
+      if (view && view.length > 1) {
+        const pages = view.filter(p => p && p <= PAGE_FILES.length);
+        if (pages.length === 0 || pages[0] === pages[pages.length - 1]) {
+          text = `${page || 1} / ${PAGE_FILES.length}`;
+        } else {
+          text = `${pages[0]}-${pages[pages.length - 1]} / ${PAGE_FILES.length}`;
+        }
+      } else if (page) {
+        text = `${page} / ${PAGE_FILES.length}`;
+      }
+      $("#pageLabel").text(text);
+    }
+
+    function updateFlipbookLayout() {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const isMobile = viewportWidth < 768;
+
+      const ARROW_MARGIN = 30;
+      const SCREEN_MARGIN = 10;
+      const ARROW_WIDTH = 44;
+      const navBtnSpace = (ARROW_MARGIN + ARROW_WIDTH + SCREEN_MARGIN) * 2;
+
+      const bottomBarHeight = 40;
+      const verticalMargin = 20;
+
+      const maxBookWidth = Math.max(viewportWidth - navBtnSpace, viewportWidth * 0.9);
+      const maxBookHeight = viewportHeight - bottomBarHeight - verticalMargin;
+
+      let pageWidth, pageHeight, bookWidth, bookHeight, displayMode;
+      const A4_RATIO = 297 / 210;
+
+      if (isMobile) {
+        pageWidth = maxBookWidth;
+        pageHeight = Math.round(pageWidth * A4_RATIO);
+        if (pageHeight > maxBookHeight) {
+          pageHeight = maxBookHeight;
+          pageWidth = Math.round(pageHeight / A4_RATIO);
+        }
+        bookWidth = pageWidth;
+        bookHeight = pageHeight;
+        displayMode = "single";
+
+        const scaleFactor = 0.97;
+        bookWidth = Math.round(bookWidth * scaleFactor);
+        bookHeight = Math.round(bookHeight * scaleFactor);
+        pageWidth = Math.round(pageWidth * scaleFactor);
+        pageHeight = Math.round(pageHeight * scaleFactor);
+      } else {
+        const maxPageWidth = maxBookWidth / 2;
+        const maxPageHeight = maxBookHeight;
+
+        if (maxPageWidth * A4_RATIO <= maxPageHeight) {
+          pageWidth = maxPageWidth;
+          pageHeight = Math.round(pageWidth * A4_RATIO);
+        } else {
+          pageHeight = maxPageHeight;
+          pageWidth = Math.round(pageHeight / A4_RATIO);
+        }
+
+        bookWidth = pageWidth * 2;
+        bookHeight = pageHeight;
+        displayMode = "double";
+
+        const scaleFactor = 0.97;
+        bookWidth = Math.round(bookWidth * scaleFactor);
+        bookHeight = Math.round(bookHeight * scaleFactor);
+        pageWidth = Math.round(pageWidth * scaleFactor);
+        pageHeight = Math.round(pageHeight * scaleFactor);
+      }
+
+      $(".flipbook-wrapper").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook").css({ width: bookWidth, height: bookHeight });
+      $("#flipbook .page").css({ width: pageWidth, height: pageHeight });
+      $(".bottom-bar").css({ width: bookWidth });
+
+      setTimeout(function() {
+        $("#flipbook .page iframe").each(function() {
+          try {
+            this.contentWindow.postMessage({
+              type: 'flipbook-resize',
+              width: pageWidth,
+              height: pageHeight
+            }, '*');
+          } catch (e) {}
+        });
+      }, 500);
+
+      if (!bookInitialized) {
+        $("#flipbook").turn({
+          width: bookWidth,
+          height: bookHeight,
+          display: displayMode,
+          autoCenter: true,
+          elevation: 0,
+          gradients: true,
+          duration: 1200,
+          easing: 'ease-in-out',
+          when: {
+            turning: function(event, page, view) {
+              $(".flipbook-wrapper").addClass("turning");
+
+              $("#flipbook .page").removeClass("even odd");
+              $("#flipbook .page").each(function(index) {
+                if ((index + 1) % 2 === 0) $(this).addClass("even");
+                else $(this).addClass("odd");
+              });
+
+              preloadAdjacentPages(page);
+            }
+          }
+        });
+
+        $("#flipbook .page").each(function(index) {
+          if ((index + 1) % 2 === 0) $(this).addClass("even");
+          else $(this).addClass("odd");
+        });
+
+        bookInitialized = true;
+      } else {
+        $("#flipbook").turn("size", bookWidth, bookHeight);
+        $("#flipbook").turn("display", displayMode);
+
+        $("#flipbook .page").removeClass("even odd");
+        $("#flipbook .page").each(function(index) {
+          if ((index + 1) % 2 === 0) $(this).addClass("even");
+          else $(this).addClass("odd");
+        });
+      }
+
+      const page = $("#flipbook").turn("page") || 1;
+      const view = $("#flipbook").turn("view");
+      
+      // 모바일에서 슬라이더 max를 명시적으로 업데이트
+      const sliderMax = getSliderMax(isMobile);
+      $("#pageSlider").attr("max", sliderMax);
+      
+      updatePageUI(page, view);
+      updateNavButtonPosition();
+    }
+
+    function updateNavButtonPosition() {
+      const ARROW_MARGIN = 30;
+      const MIN_SCREEN_MARGIN = 10;
+
+      const $flipbookWrapper = $(".flipbook-wrapper");
+      const $prevBtn = $("#prevBtn");
+      const $nextBtn = $("#nextBtn");
+
+      if ($flipbookWrapper.length && $prevBtn.length && $nextBtn.length) {
+        const wrapperRect = $flipbookWrapper[0].getBoundingClientRect();
+        const wrapperLeft = wrapperRect.left;
+        const wrapperRight = wrapperRect.right;
+        const wrapperTop = wrapperRect.top;
+        const wrapperHeight = wrapperRect.height;
+
+        const viewportWidth = window.innerWidth;
+
+        let prevLeft = wrapperLeft - ARROW_MARGIN - 44;
+        if (prevLeft < MIN_SCREEN_MARGIN) prevLeft = MIN_SCREEN_MARGIN;
+
+        let nextLeft = wrapperRight + ARROW_MARGIN;
+        if (nextLeft + 44 > viewportWidth - MIN_SCREEN_MARGIN) {
+          nextLeft = viewportWidth - 44 - MIN_SCREEN_MARGIN;
+        }
+
+        $prevBtn.css({
+          left: prevLeft + 'px',
+          top: (wrapperTop + wrapperHeight / 2) + 'px'
+        });
+
+        $nextBtn.css({
+          left: nextLeft + 'px',
+          top: (wrapperTop + wrapperHeight / 2) + 'px'
+        });
+      }
+    }
+
+    $(document).ready(function () {
+      createPages();
+
+      const isMobile = isMobileView();
+      $("#pageSlider").attr("max", getSliderMax(isMobile)).val(1);
+
+      updateFlipbookLayout();
+      // 초기 로딩 시 기둥이 바로 보이도록 보장
+      $(".flipbook-wrapper").removeClass("turning");
+
+      $("#flipbook").bind("turned", function (e, page, view) {
+        $(".flipbook-wrapper").removeClass("turning");
+
+        $("#flipbook .page").removeClass("even odd");
+        $("#flipbook .page").each(function(index) {
+          if ((index + 1) % 2 === 0) $(this).addClass("even");
+          else $(this).addClass("odd");
+        });
+
+        // 현재 보이는 페이지의 iframe이 로드되었는지 확인하고 표시
+        const currentIndex = page - 1;
+        const currentPageEl = $("#flipbook .page").eq(currentIndex);
+        const currentIframe = currentPageEl.find("iframe");
+        
+        // 현재 페이지가 로드되지 않았으면 강제로 로드
+        if (currentIframe.length && !currentIframe.attr("data-src-loaded")) {
+          const src = currentIframe.attr("data-src");
+          if (src) {
+            const iframeElement = currentIframe[0];
+            setupIframeLoadHandler(iframeElement);
+            currentIframe.attr("src", src);
+            currentIframe.attr("data-src-loaded", "true");
+          }
+        }
+        
+        if (currentIframe.length && currentIframe.attr("data-ready") !== "true") {
+          // 아직 로드 중이면 로드 완료를 기다림
+          const checkLoad = setInterval(function() {
+            if (currentIframe.attr("data-ready") === "true") {
+              clearInterval(checkLoad);
+            }
+          }, 50);
+          // 최대 3초 후 강제 표시 (로드 실패 대비)
+          setTimeout(function() {
+            clearInterval(checkLoad);
+            if (currentIframe.attr("data-ready") !== "true") {
+              currentIframe.attr("data-ready", "true");
+            }
+          }, 3000);
+        }
+
+        // 모바일에서 슬라이더 max를 명시적으로 업데이트
+        const isMobileCheck = isMobileView();
+        const sliderMax = getSliderMax(isMobileCheck);
+        $("#pageSlider").attr("max", sliderMax);
+        
+        updatePageUI(page, view);
+        preloadAdjacentPages(page);
+        setTimeout(updateNavButtonPosition, 100);
+      });
+
+      $("#prevBtn").click(function() {
+        const currentPage = $("#flipbook").turn("page") || 1;
+        if (currentPage > 1) {
+          // 전환 전에 미리 로드
+          preloadAdjacentPages(currentPage - 1);
+          // 약간의 지연을 두어 로드 시작 후 전환
+          setTimeout(function() {
+            $("#flipbook").turn("previous");
+          }, 50);
+        } else {
+          $("#flipbook").turn("previous");
+        }
+      });
+
+      $("#nextBtn").click(function() {
+        const currentPage = $("#flipbook").turn("page") || 1;
+        if (currentPage < PAGE_FILES.length) {
+          // 전환 전에 미리 로드
+          preloadAdjacentPages(currentPage + 1);
+          // 약간의 지연을 두어 로드 시작 후 전환
+          setTimeout(function() {
+            $("#flipbook").turn("next");
+          }, 50);
+        } else {
+          $("#flipbook").turn("next");
+        }
+      });
+
+      $("#pageSlider").on("input change", function () {
+        const sliderPos = parseInt($(this).val(), 10);
+        const isMobile = isMobileView();
+        const targetPage = sliderPosToPage(sliderPos, isMobile);
+        // 목표 페이지를 미리 로드
+        preloadAdjacentPages(targetPage);
+        // 약간의 지연을 두어 로드 시작 후 전환
+        setTimeout(function() {
+          $("#flipbook").turn("page", targetPage);
+        }, 100);
+      });
+
+      $(window).on("resize", function() {
+        const isMobile = isMobileView();
+        $("#pageSlider").attr("max", getSliderMax(isMobile));
+
+        const currentPage = $("#flipbook").turn("page") || 1;
+        const currentSliderPos = pageToSliderPos(currentPage, isMobile);
+        $("#pageSlider").val(currentSliderPos);
+
+        updateFlipbookLayout();
+
+        setTimeout(function() {
+          $("#flipbook .page").removeClass("even odd");
+          $("#flipbook .page").each(function(index) {
+            if ((index + 1) % 2 === 0) $(this).addClass("even");
+            else $(this).addClass("odd");
+          });
+        }, 100);
+
+        setTimeout(updateNavButtonPosition, 100);
+      });
+
+      updatePageUI(1, [1]);
+      setTimeout(updateNavButtonPosition, 200);
+    });
+  </script>
+</body>
+</html>

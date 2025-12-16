@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>목차-01</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles.css">
+  <script>
+    // 플립북 모드 감지 및 스타일 조정
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isFlipbook = urlParams.get('flipbook') === '1';
+      
+      if (isFlipbook) {
+        function adjustForFlipbook() {
+          // body 스타일 조정
+          document.body.style.margin = '0';
+          document.body.style.padding = '0';
+          document.body.style.background = 'white';
+          document.body.style.display = 'block';
+          document.body.style.overflow = 'hidden';
+          document.body.style.width = '100%';
+          document.body.style.height = '100%';
+          
+          const pageElement = document.querySelector('.page');
+          if (pageElement) {
+            pageElement.style.margin = '0';
+            pageElement.style.border = 'none';
+            pageElement.style.boxShadow = 'none';
+            
+            // A4 실제 크기: 210mm x 297mm
+            // 브라우저에서 1mm ≈ 3.7795px (96 DPI)
+            const a4WidthPx = 210 * 3.7795; // 약 794px
+            const a4HeightPx = 297 * 3.7795; // 약 1123px
+            
+            // iframe 크기 가져오기 (window.innerWidth/Height 사용)
+            const iframeWidth = window.innerWidth;
+            const iframeHeight = window.innerHeight;
+            
+            // 스케일 비율 계산
+            const scaleX = iframeWidth / a4WidthPx;
+            const scaleY = iframeHeight / a4HeightPx;
+            const scale = Math.min(scaleX, scaleY);
+            
+            // body에 스케일 적용
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = 'top left';
+            document.body.style.width = `${a4WidthPx}px`;
+            document.body.style.height = `${a4HeightPx}px`;
+            
+            // postMessage로 크기 정보 받기 (부모에서 전송하는 경우)
+            window.addEventListener('message', function(event) {
+              if (event.data && event.data.type === 'flipbook-resize') {
+                const newScaleX = event.data.width / a4WidthPx;
+                const newScaleY = event.data.height / a4HeightPx;
+                const newScale = Math.min(newScaleX, newScaleY);
+                document.body.style.transform = `scale(${newScale})`;
+              }
+            });
+          }
+        }
+        
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', adjustForFlipbook);
+        } else {
+          adjustForFlipbook();
+        }
+        
+        // iframe 크기 변경 감지
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(adjustForFlipbook, 100);
+        });
+      }
+    })();
+    
+  </script>
+  <style>
+    .toc-page {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      width: 100%;
+      position: relative;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0;
+    }
+    
+    /* 위쪽 가로선 - CONTENTS 제목 오른쪽에서 시작 (고정 위치) */
+    .toc-top-line {
+      position: absolute;
+      top: 10mm;
+      left: 100mm;           /* sidebar(50mm) 오른쪽에서 약 20mm 떨어진 고정 위치 */
+      width: 100mm;         /* 길이 고정 */
+      height: 9px;
+      background-color: #2563EB;
+      z-index: 1;
+    }
+    
+    /* 아래쪽 가로선 - 오른쪽 하단 */
+    .toc-page::after {
+      content: '';
+      position: absolute;
+      bottom: 5mm;
+      right: -15mm;
+      width: 250mm;
+      height: 9px;
+      background-color: #2563EB;
+      z-index: 1;
+    }
+    
+    /* 왼쪽 CONTENTS 배너 */
+    .toc-sidebar {
+      width: 50mm;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      position: absolute;
+      left: 0;
+      padding: 10mm 0 0 0mm;
+      z-index: 2;
+    }
+    
+    .toc-sidebar-contents {
+      font-size: 50px;
+      font-weight: 900;
+      color: #2563EB;
+      letter-spacing: 0.1em;
+      line-height: 0;
+      font-family: 'Arial', sans-serif;
+      height: auto;
+      transform: scaleY(1.5);
+      transform-origin: top;
+      margin-left: 2mm;
+    }
+    
+    /* 콘텐츠 영역 */
+    .toc-content {
+      flex: 1;
+      max-width: 185mm;
+      width: calc(100% - 60mm);
+      display: flex;
+      flex-direction: column;
+      padding: 28mm 3mm 8mm 3mm;
+      overflow-y: auto;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+    
+    /* 각 파트 블록 */
+    .toc-part {
+      margin-bottom: 1mm;
+    }
+    
+    /* 첫 번째 파트에 추가 여백 */
+    .toc-part:first-child {
+      margin-top: 0.5mm;
+    }
+    
+    /* 파트 타이틀 */
+    .toc-part-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-bottom: 4mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 1px solid #2563EB;
+      display: flex;
+      align-items: baseline;
+      gap: 3mm;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    .toc-part-title-text {
+      flex: 1;
+    }
+    
+    .toc-part-title-page {
+      margin-left: 1mm;
+      min-width: 18px;
+      text-align: right;
+    }
+    
+    /* 항목 리스트 */
+    .toc-item-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .toc-item {
+      font-size: 11px;
+      color: #1F2937;
+      line-height: 1.6;
+      margin-bottom: 1.4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-family: 'Arial', sans-serif;
+      gap: 5mm;
+    }
+    
+    .toc-item-text {
+      text-align: left;
+      font-size: 13px;
+    }
+    
+    .toc-item-page {
+      margin-left: 0;
+      font-weight: 400;
+      min-width: 24px;
+      text-align: left;
+    }
+    
+    /* 챕터 스타일 */
+    .toc-item.toc-chapter {
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-top: 2.2mm;
+      margin-bottom: 1.2mm;
+      padding-left: 0;
+    }
+    
+    .toc-item.toc-chapter:first-child {
+      margin-top: 2mm;
+    }
+    
+    /* 섹션 스타일 */
+    .toc-item.toc-section {
+      font-size: 11.5px;
+      font-weight: 400;
+      padding-left: 0;
+      margin-bottom: 1.8mm;
+    }
+    
+    .toc-item.toc-section .toc-item-text {
+      font-size: 13px;
+    }
+    
+  </style>
+</head>
+<body class="page-title-body">
+  <div class="page page-title-page">
+      <div class="toc-page">
+      <!-- 위쪽 가로선 -->
+      <div class="toc-top-line"></div>
+      
+      <!-- 왼쪽 CONTENTS 배너 (가로형) -->
+      <div class="toc-sidebar">
+        <div class="toc-sidebar-contents">CONTENTS</div>
+      </div>
+      
+      <!-- 콘텐츠: 파트별로 묶어서 표시 -->
+      <div class="toc-content">
+        <!-- PART 1 -->
+        <div class="toc-part">
+          <div class="toc-part-title">
+            <span class="toc-part-title-text">PART 1 성공적인 고교 생활을 위한 핵심 가이드</span>
+          </div>
+          
+          <ul class="toc-item-list">
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 1 고교 생활 핵심 이해</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-1 자기주도 학습의 의미와 고교 학습 특성</span>
+              <span class="toc-item-page">01</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-2 고교 생활에서 '설계'가 필요한 이유</span>
+              <span class="toc-item-page">02</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 2 변화하는 제도 이해</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-1 내신 제도와 교육과정 변화(2015/2022 개정)</span>
+              <span class="toc-item-page">03</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-2 통합형 vs 선택형 수능 구조 비교</span>
+              <span class="toc-item-page">04</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 3 고교 3년 전략 로드맵</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-1 학년별 로드맵(고1 고2 고3 핵심 목표)</span>
+              <span class="toc-item-page">05</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-2 위험 구간 관리와 부모-학생 대화법</span>
+              <span class="toc-item-page">06</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- PART 2 -->
+        <div class="toc-part">
+          <div class="toc-part-title">
+            <span class="toc-part-title-text">PART 2 고교학점제와 2022 개정 교육과정</span>
+          </div>
+          
+          <ul class="toc-item-list">
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 1 교육과정 구조 이해</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-1 보통교과 전문교과 체계</span>
+              <span class="toc-item-page">07</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-2 등급 구조 변화와 평가 방식 이해</span>
+              <span class="toc-item-page">08</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 2 고교학점제 핵심 개념</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-1 학점 이수·미이수(1)의 개념</span>
+              <span class="toc-item-page">09</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-2 졸업 기준(192학점)과 편제표 읽기</span>
+              <span class="toc-item-page">10</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 3 과목 선택 전략</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-1 대입과 연계되는 과목 선택 구조</span>
+              <span class="toc-item-page">11</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-2 진로 기반 과목 선택 및 선배 사례</span>
+              <span class="toc-item-page">12</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- PART 3 -->
+        <div class="toc-part">
+          <div class="toc-part-title">
+            <span class="toc-part-title-text">PART 3 학교생활기록부(학생부) 전략</span>
+          </div>
+          
+          <ul class="toc-item-list">
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 1 학생부의 역할</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-1 학생부의 전형별 중요성(교과 종합·정시)</span>
+              <span class="toc-item-page">13</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">1-2 학생부가 평가하는 핵심 역량(3대 역량)</span>
+              <span class="toc-item-page">14</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 2 학생부 항목별 관리 전략</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-1 인적·학적·출결·창체·자격증 관리</span>
+              <span class="toc-item-page">15</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">2-2 교과 성적 구조세특·행동특성 관리</span>
+              <span class="toc-item-page">16</span>
+            </li>
+            <li class="toc-item toc-chapter">
+              <span class="toc-item-text">Chapter 3 학생부 실제 분석 사례</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-1 우수 사례 아쉬운 사례 비고</span>
+              <span class="toc-item-page">17</span>
+            </li>
+            <li class="toc-item toc-section">
+              <span class="toc-item-text">3-2 대학은 실제로 학생부를 어떻게 읽는가?</span>
+              <span class="toc-item-page">18</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
