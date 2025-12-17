@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>파트1-07</title>
+  <link rel="stylesheet" href="../../../styles.css">
+  <script>
+    // 플립북 모드 감지 및 스타일 조정
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isFlipbook = urlParams.get('flipbook') === '1';
+      
+      if (isFlipbook) {
+        function adjustForFlipbook() {
+          // body 스타일 조정
+          document.body.style.margin = '0';
+          document.body.style.padding = '0';
+          document.body.style.background = 'white';
+          document.body.style.display = 'block';
+          document.body.style.overflow = 'hidden';
+          document.body.style.width = '100%';
+          document.body.style.height = '100%';
+          
+          const pageElement = document.querySelector('.page');
+          if (pageElement) {
+            pageElement.style.margin = '0';
+            pageElement.style.border = 'none';
+            
+            // A4 실제 크기: 210mm x 297mm
+            // 브라우저에서 1mm ≈ 3.7795px (96 DPI)
+            const a4WidthPx = 210 * 3.7795; // 약 794px
+            const a4HeightPx = 297 * 3.7795; // 약 1123px
+            
+            // iframe 크기 가져오기 (window.innerWidth/Height 사용)
+            const iframeWidth = window.innerWidth;
+            const iframeHeight = window.innerHeight;
+            
+            // 스케일 비율 계산
+            const scaleX = iframeWidth / a4WidthPx;
+            const scaleY = iframeHeight / a4HeightPx;
+            const scale = Math.min(scaleX, scaleY);
+            
+            // body에 스케일 적용
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = 'top left';
+            document.body.style.width = `${a4WidthPx}px`;
+            document.body.style.height = `${a4HeightPx}px`;
+            
+            // postMessage로 크기 정보 받기 (부모에서 전송하는 경우)
+            window.addEventListener('message', function(event) {
+              if (event.data && event.data.type === 'flipbook-resize') {
+                const newScaleX = event.data.width / a4WidthPx;
+                const newScaleY = event.data.height / a4HeightPx;
+                const newScale = Math.min(newScaleX, newScaleY);
+                document.body.style.transform = `scale(${newScale})`;
+              }
+            });
+          }
+        }
+        
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', adjustForFlipbook);
+        } else {
+          adjustForFlipbook();
+        }
+        
+        // iframe 크기 변경 감지
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(adjustForFlipbook, 100);
+        });
+      }
+    })();
+  </script>
+  <style>
+    /* 채팅 컨테이너 */
+    .chat-container {
+      display: flex;
+      gap: 6mm;
+      margin-top: 2mm;
+      margin-bottom: 5mm;
+    }
+    
+    .chat-box {
+      flex: 1;
+      background-color: rgba(245, 245, 245, 0.6);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      border-radius: 6px;
+      padding: 4mm;
+      position: relative;
+      backdrop-filter: blur(2px);
+    }
+    
+    /* 채팅 박스 헤더 */
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3.2mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .chat-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-text);
+      position: relative;
+      top: -2.5px;
+    }
+    
+    .chat-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6.5px 8px;
+      border-radius: 4px;
+      margin-top: -1mm;
+      margin-right: 1mm;
+      position: relative;
+      top: -1px;
+    }
+    
+    .chat-badge.negative {
+      background-color: #DC2626;
+      color: #FFFFFF;
+      padding-left: 9px;
+    }
+    
+    .chat-badge.positive {
+      background-color: var(--color-primary);
+      color: #FFFFFF;
+      padding-left: 9px;
+    }
+    
+    /* 채팅 메시지 영역 */
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: -2mm;
+    }
+    
+    .chat-message {
+      display: flex;
+      flex-direction: column;
+      gap: 1.9mm;
+    }
+    
+    .chat-message.child {
+      align-items: flex-start;
+    }
+    
+    .chat-message.parent {
+      align-items: flex-end;
+    }
+    
+    .message-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-light);
+      padding: 0 1mm;
+    }
+    
+    .message-bubble {
+      max-width: 85%;
+      padding: 2.6mm 3mm;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+    
+    .chat-message.child .message-bubble {
+      background-color: #FFFFFF;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+      border-top-left-radius: 3px;
+    }
+    
+    .chat-message.parent .message-bubble {
+      background-color: #E3F2FD;
+      color: var(--color-text);
+      border: 1px solid #BBDEFB;
+      border-top-right-radius: 3px;
+    }
+    
+    /* 대화 가이드 섹션 */
+    .guide-section {
+      margin-top: -1mm;
+      margin-bottom: 2mm;
+      display: flex;
+      flex-direction: column;
+      gap: 4mm;
+    }
+    
+    .guide-card {
+      background-color: #FFFFFF;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 3mm;
+      display: flex;
+      flex-direction: column;
+      gap: 2mm;
+    }
+    
+    .guide-header {
+      display: flex;
+      align-items: center;
+      gap: 2.5mm;
+    }
+    
+    .guide-number {
+      flex-shrink: 0;
+      color: var(--color-primary);
+      font-size: 16px;
+      margin-left: 1.5mm;
+      font-weight: 850;
+      -webkit-text-stroke: 0.3px var(--color-primary);
+    }
+    
+    .guide-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 2;
+    }
+    
+    .guide-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+    
+    .guide-example {
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 2mm 2.5mm;
+      border-radius: 4px;
+      background-color: #FAFAFA;
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+    }
+    
+    .guide-icon {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    
+    .guide-example.bad .guide-icon {
+      color: #DC2626;
+    }
+    
+    .guide-example.good .guide-icon {
+      color: var(--color-primary);
+    }
+    
+    .guide-text {
+      flex: 1;
+    }
+    
+    .guide-example.bad .guide-text {
+      color: var(--color-text);
+      font-weight: 400;
+    }
+    
+    .guide-example.good .guide-text {
+      color: var(--color-text);
+      font-weight: 400;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- 중제목 -->
+    <h2 class="title-2">
+      Chapter 4. 성적을 올리는 또 하나의 힘, '가족의 소통'
+    </h2>
+    
+    <!-- 소제목 -->
+    <h3 class="title-3">4-1. 아이의 편이 되어주는 대화</h3>
+    
+    <!-- 상단 설명 -->
+    <div class="text-body" style="margin-bottom: 3mm;">
+      고등학교 3년은 학생과 가족이 함께하는 여정입니다. 가족의 말 한마디는 아이에게 동기가 되기도 상처가 되기도 합니다. 비난보다 응원, 의심보다 믿음이 필요합니다. 서로 이렇게 대화해 보세요.
+    </div>
+    
+    <!-- 채팅 화면 비교 -->
+    <div class="chat-container">
+      <!-- 비추천 대화 -->
+      <div class="chat-box">
+        <div class="chat-header">
+          <span class="chat-title">비추천 대화</span>
+          <span class="chat-badge negative">비난</span>
+        </div>
+        <div class="chat-messages">
+          <div class="chat-message child">
+            <span class="message-label">학생</span>
+            <div class="message-bubble">
+              엄마, 나 이번 시험 좀 망친 것 같아...
+            </div>
+          </div>
+          <div class="chat-message parent">
+            <span class="message-label">부모님</span>
+            <div class="message-bubble">
+              그러게 내가 학원 가라고 했잖아!<br>핸드폰만 하니까 그렇지.
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 추천 대화 -->
+      <div class="chat-box">
+        <div class="chat-header">
+          <span class="chat-title">추천 대화</span>
+          <span class="chat-badge positive">응원</span>
+        </div>
+        <div class="chat-messages">
+          <div class="chat-message child">
+            <span class="message-label">학생</span>
+            <div class="message-bubble">
+              엄마, 나 이번 시험 좀 망친 것 같아...
+            </div>
+          </div>
+          <div class="chat-message parent">
+            <span class="message-label">부모님</span>
+            <div class="message-bubble">
+              고생했어. 어떤 부분이 제일 힘들었어?<br>엄마가 뭐 도와줄까?
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 대화 가이드 섹션 -->
+    <div class="guide-section"  >
+      <!-- 가이드 1 -->
+      <div class="guide-card">
+        <div class="guide-header">
+          <div class="guide-number">01</div>
+          <div class="guide-title">"왜?"(비난)가 아니라 "어떻게?"(해결)를 물어보세요.</div>
+        </div>
+        <div class="guide-content">
+          <div class="guide-example bad">
+            <div class="guide-icon">❌</div>
+            <div class="guide-text">왜 또 늦게자?</div>
+          </div>
+          <div class="guide-example good">
+            <div class="guide-icon">⭕</div>
+            <div class="guide-text">내일 덜 피곤하려면 오늘 몇 시에 눕는게 좋을까?</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 가이드 2 -->
+      <div class="guide-card">
+        <div class="guide-header">
+          <div class="guide-number">02</div>
+          <div class="guide-title">결과보다 '과정'을 피드백하세요.</div>
+        </div>
+        <div class="guide-content">
+          <div class="guide-example bad">
+            <div class="guide-icon">❌</div>
+            <div class="guide-text">이번 시험 3등급이라니 실망이다.</div>
+          </div>
+          <div class="guide-example good">
+            <div class="guide-icon">⭕</div>
+            <div class="guide-text">다음 시험에서 바꾸고 싶은 공부 방식 한 가지만 정해볼까?</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 가이드 3 -->
+      <div class="guide-card">
+        <div class="guide-header">
+          <div class="guide-number">03</div>
+          <div class="guide-title">계획은 아이 입에서 나오도록 유도하세요.</div>
+        </div>
+        <div class="guide-content">
+          <div class="guide-example bad">
+            <div class="guide-icon">❌</div>
+            <div class="guide-text">수학 학원 하나 더 다녀.</div>
+          </div>
+          <div class="guide-example good">
+            <div class="guide-icon">⭕</div>
+            <div class="guide-text">이번에 어떤 단원이 제일 힘들었어? 어떤 도움이 필요해?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 총정리 박스 -->
+    <div class="info-box" style="margin-top: 3mm;">
+      <div class="info-title">PART 1 마무리 정리</div>
+      <div class="text-small">
+        고교생활 성공의 핵심은 <strong>자기주도학습, 나에게 적용되는 입시 제도 이해, 3년을 고려한 전략적 설계, 가족과의 소통</strong>입니다. 이 네 가지가 갖춰지면 고교생활의 방향을 잃지 않게 됩니다. 지금부터 하나씩 시작해 보세요.
+      </div>
+    </div>
+    
+    <!-- 페이지 하단 번호 -->
+    <div class="page-footer">- 6 -</div>
+  </div>
+</body>
+</html>

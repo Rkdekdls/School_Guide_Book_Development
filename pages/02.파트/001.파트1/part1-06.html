@@ -13,6 +13,7 @@
       
       if (isFlipbook) {
         function adjustForFlipbook() {
+          // body 스타일 조정
           document.body.style.margin = '0';
           document.body.style.padding = '0';
           document.body.style.background = 'white';
@@ -25,23 +26,28 @@
           if (pageElement) {
             pageElement.style.margin = '0';
             pageElement.style.border = 'none';
-            pageElement.style.boxShadow = 'none';
             
-            const a4WidthPx = 210 * 3.7795;
-            const a4HeightPx = 297 * 3.7795;
+            // A4 실제 크기: 210mm x 297mm
+            // 브라우저에서 1mm ≈ 3.7795px (96 DPI)
+            const a4WidthPx = 210 * 3.7795; // 약 794px
+            const a4HeightPx = 297 * 3.7795; // 약 1123px
             
+            // iframe 크기 가져오기 (window.innerWidth/Height 사용)
             const iframeWidth = window.innerWidth;
             const iframeHeight = window.innerHeight;
             
+            // 스케일 비율 계산
             const scaleX = iframeWidth / a4WidthPx;
             const scaleY = iframeHeight / a4HeightPx;
             const scale = Math.min(scaleX, scaleY);
             
+            // body에 스케일 적용
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${a4WidthPx}px`;
             document.body.style.height = `${a4HeightPx}px`;
             
+            // postMessage로 크기 정보 받기 (부모에서 전송하는 경우)
             window.addEventListener('message', function(event) {
               if (event.data && event.data.type === 'flipbook-resize') {
                 const newScaleX = event.data.width / a4WidthPx;
@@ -59,6 +65,7 @@
           adjustForFlipbook();
         }
         
+        // iframe 크기 변경 감지
         let resizeTimer;
         window.addEventListener('resize', function() {
           clearTimeout(resizeTimer);
@@ -82,7 +89,6 @@
       background-color: #ffffff;
       border-radius: 6px;
       overflow: hidden;
-      box-shadow: none;
       table-layout: fixed;
       border: 1px solid #E5E7EB;
     }
@@ -221,6 +227,11 @@
     .checkpoint-box {
       flex: 1;
     }
+    
+    /* 체크포인트 리스트 간격 조정 */
+    .checkpoint-container .list-check li {
+      margin-bottom: 1.5mm;
+    }
   </style>
 </head>
 <body>
@@ -243,7 +254,7 @@
       <table class="schedule-table">
         <thead>
           <tr>
-            <th>월별</th>
+            <th>구분</th>
             <th class="grade-header">1학년</th>
             <th class="grade-header">2학년</th>
             <th class="grade-header">3학년</th>
@@ -408,8 +419,8 @@
           <div class="tip-title">3학년</div>
           <ul class="list-check">
             <li>대입 일정 동시 진행</li>
+            <li>모의고사 성적 분석</li>
             <li>지원 전략 최종 확정</li>
-            <li>학생부 마감 기준 정리</li>
           </ul>
         </div>
       </div>

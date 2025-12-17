@@ -22,6 +22,7 @@ School_Guide_Book_Development/
 │           ├── part1-04.html # 파트1 페이지 4
 │           ├── part1-05.html # 파트1 페이지 5
 │           └── part1-06.html # 파트1 페이지 6
+│           └── part1-07.html # 파트1 페이지 7
 ├── styles.css                # 공통 스타일시트
 └── README.md                 # 프로젝트 설명서
 ```

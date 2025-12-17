@@ -13,6 +13,7 @@
       
       if (isFlipbook) {
         function adjustForFlipbook() {
+          // body 스타일 조정
           document.body.style.margin = '0';
           document.body.style.padding = '0';
           document.body.style.background = 'white';
@@ -25,23 +26,28 @@
           if (pageElement) {
             pageElement.style.margin = '0';
             pageElement.style.border = 'none';
-            pageElement.style.boxShadow = 'none';
             
-            const a4WidthPx = 210 * 3.7795;
-            const a4HeightPx = 297 * 3.7795;
+            // A4 실제 크기: 210mm x 297mm
+            // 브라우저에서 1mm ≈ 3.7795px (96 DPI)
+            const a4WidthPx = 210 * 3.7795; // 약 794px
+            const a4HeightPx = 297 * 3.7795; // 약 1123px
             
+            // iframe 크기 가져오기 (window.innerWidth/Height 사용)
             const iframeWidth = window.innerWidth;
             const iframeHeight = window.innerHeight;
             
+            // 스케일 비율 계산
             const scaleX = iframeWidth / a4WidthPx;
             const scaleY = iframeHeight / a4HeightPx;
             const scale = Math.min(scaleX, scaleY);
             
+            // body에 스케일 적용
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${a4WidthPx}px`;
             document.body.style.height = `${a4HeightPx}px`;
             
+            // postMessage로 크기 정보 받기 (부모에서 전송하는 경우)
             window.addEventListener('message', function(event) {
               if (event.data && event.data.type === 'flipbook-resize') {
                 const newScaleX = event.data.width / a4WidthPx;
@@ -59,6 +65,7 @@
           adjustForFlipbook();
         }
         
+        // iframe 크기 변경 감지
         let resizeTimer;
         window.addEventListener('resize', function() {
           clearTimeout(resizeTimer);
@@ -67,11 +74,6 @@
       }
     })();
   </script>
-  <style>
-    .comparison-table {
-      box-shadow: none;
-    }
-  </style>
 </head>
 <body>
   <div class="page">
@@ -142,7 +144,7 @@
       <thead>
         <tr>
           <th style="width: 50%;">고3 (2024 입학)</th>
-          <th style="width: 50%;">고1·고2 (2025 이후 입학)</th>
+          <th style="width: 50%; background-color: #1653c9;">고1·고2 (2025 이후 입학)</th>
         </tr>
       </thead>
       <tbody>

@@ -13,6 +13,7 @@
       
       if (isFlipbook) {
         function adjustForFlipbook() {
+          // body 스타일 조정
           document.body.style.margin = '0';
           document.body.style.padding = '0';
           document.body.style.background = 'white';
@@ -25,23 +26,28 @@
           if (pageElement) {
             pageElement.style.margin = '0';
             pageElement.style.border = 'none';
-            pageElement.style.boxShadow = 'none';
             
-            const a4WidthPx = 210 * 3.7795;
-            const a4HeightPx = 297 * 3.7795;
+            // A4 실제 크기: 210mm x 297mm
+            // 브라우저에서 1mm ≈ 3.7795px (96 DPI)
+            const a4WidthPx = 210 * 3.7795; // 약 794px
+            const a4HeightPx = 297 * 3.7795; // 약 1123px
             
+            // iframe 크기 가져오기 (window.innerWidth/Height 사용)
             const iframeWidth = window.innerWidth;
             const iframeHeight = window.innerHeight;
             
+            // 스케일 비율 계산
             const scaleX = iframeWidth / a4WidthPx;
             const scaleY = iframeHeight / a4HeightPx;
             const scale = Math.min(scaleX, scaleY);
             
+            // body에 스케일 적용
             document.body.style.transform = `scale(${scale})`;
             document.body.style.transformOrigin = 'top left';
             document.body.style.width = `${a4WidthPx}px`;
             document.body.style.height = `${a4HeightPx}px`;
             
+            // postMessage로 크기 정보 받기 (부모에서 전송하는 경우)
             window.addEventListener('message', function(event) {
               if (event.data && event.data.type === 'flipbook-resize') {
                 const newScaleX = event.data.width / a4WidthPx;
@@ -59,6 +65,7 @@
           adjustForFlipbook();
         }
         
+        // iframe 크기 변경 감지
         let resizeTimer;
         window.addEventListener('resize', function() {
           clearTimeout(resizeTimer);
@@ -79,7 +86,6 @@
       flex: 1;
       border-radius: 6px;
       padding: 5mm;
-      box-shadow: none;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -110,6 +116,7 @@
     }
     
     .card-header.new-system {
+      background-color: #1653c9;
       border-bottom: none;
     }
     
@@ -252,7 +259,7 @@
     </h2>
     
     <!-- 소제목 -->
-    <h3 class="title-3">2-2. 학년별 교육과정·수능 체계 변화 (2015 개정 VS 2022 개정)</h3>
+    <h3 class="title-3">2-2. 학년별 교육과정 및 수능 체계 변화 (2015 VS 2022 개정)</h3>
     
     <!-- 상단 설명 -->
     <div class="text-body" style="margin-bottom: 3mm;">
