@@ -320,31 +320,16 @@
       PAGE_FILES.forEach((pageFile, index) => {
         const pageNum = index + 1;
 
+        // ✅ 모든 페이지를 즉시 로드 (loading="eager"로 변경)
         const iframe = $("<iframe></iframe>")
+          .attr("src", pageFile + "?flipbook=1")
           .attr("data-src", pageFile + "?flipbook=1")
-          .attr("loading", "lazy")
+          .attr("data-src-loaded", "true")
+          .attr("loading", "eager")
           .css({ "pointer-events": "auto" });
 
-        // 처음 3페이지는 즉시 로드 (완벽한 초기 경험)
-        if (index <= 2) {
-          iframe.attr("src", pageFile + "?flipbook=1");
-          iframe.attr("data-src-loaded", "true");
-          setupIframeLoadHandler(iframe[0]);
-        }
-        
-        // 마지막 페이지도 미리 로드 (9페이지가 보이도록)
-        if (index === PAGE_FILES.length - 1) {
-          setTimeout(function() {
-            if (!iframe.attr("data-src-loaded")) {
-              const src = iframe.attr("data-src");
-              if (src) {
-                setupIframeLoadHandler(iframe[0]);
-                iframe.attr("src", src);
-                iframe.attr("data-src-loaded", "true");
-              }
-            }
-          }, 500);
-        }
+        // 모든 iframe에 로드 핸들러 설정
+        setupIframeLoadHandler(iframe[0]);
 
         const pageClass = (pageNum % 2 === 0) ? "even" : "odd";
         $("<div></div>")
@@ -356,72 +341,8 @@
     }
 
     function preloadAdjacentPages(currentPage) {
-      const currentIndex = currentPage - 1;
-      const isMobile = isMobileView();
-
-      // 현재 페이지 로드
-      const currentPageEl = $("#flipbook .page").eq(currentIndex);
-      const currentIframe = currentPageEl.find("iframe");
-      if (currentIframe.length && !currentIframe.attr("data-src-loaded")) {
-        const src = currentIframe.attr("data-src");
-        if (src) {
-          const iframeElement = currentIframe[0];
-          setupIframeLoadHandler(iframeElement);
-          currentIframe.attr("src", src);
-          currentIframe.attr("data-src-loaded", "true");
-        }
-      }
-
-      // Double 모드에서는 현재 보이는 짝수 페이지도 로드
-      if (!isMobile && currentIndex % 2 === 0 && currentIndex + 1 < PAGE_FILES.length) {
-        const pairPage = $("#flipbook .page").eq(currentIndex + 1);
-        const pairIframe = pairPage.find("iframe");
-        if (pairIframe.length && !pairIframe.attr("data-src-loaded")) {
-          const src = pairIframe.attr("data-src");
-          if (src) {
-            const iframeElement = pairIframe[0];
-            setupIframeLoadHandler(iframeElement);
-            pairIframe.attr("src", src);
-            pairIframe.attr("data-src-loaded", "true");
-          }
-        }
-      }
-
-      // 다음 페이지와 그 다음 페이지까지 미리 로드 (double 모드 대응)
-      const pagesToLoad = isMobile ? [currentIndex + 1] : [currentIndex + 1, currentIndex + 2];
-      pagesToLoad.forEach(idx => {
-        if (idx < PAGE_FILES.length) {
-          const nextPage = $("#flipbook .page").eq(idx);
-          const nextIframe = nextPage.find("iframe");
-          if (nextIframe.length && !nextIframe.attr("data-src-loaded")) {
-            const src = nextIframe.attr("data-src");
-            if (src) {
-              const iframeElement = nextIframe[0];
-              setupIframeLoadHandler(iframeElement);
-              nextIframe.attr("src", src);
-              nextIframe.attr("data-src-loaded", "true");
-            }
-          }
-        }
-      });
-
-      // 이전 페이지와 그 이전 페이지까지 미리 로드 (double 모드 대응)
-      const prevPagesToLoad = isMobile ? [currentIndex - 1] : [currentIndex - 1, currentIndex - 2];
-      prevPagesToLoad.forEach(idx => {
-        if (idx >= 0) {
-          const prevPage = $("#flipbook .page").eq(idx);
-          const prevIframe = prevPage.find("iframe");
-          if (prevIframe.length && !prevIframe.attr("data-src-loaded")) {
-            const src = prevIframe.attr("data-src");
-            if (src) {
-              const iframeElement = prevIframe[0];
-              setupIframeLoadHandler(iframeElement);
-              prevIframe.attr("src", src);
-              prevIframe.attr("data-src-loaded", "true");
-            }
-          }
-        }
-      });
+      // ✅ 모든 페이지가 이미 로드되어 있으므로 추가 로드 불필요
+      // 안전성을 위해 함수는 유지하되 빈 함수로 처리
     }
 
     function isMobileView() {
@@ -553,7 +474,7 @@
           autoCenter: true,
           elevation: 50,
           gradients: true,
-          duration: 800,
+          duration: 1000,
           acceleration: true,
           when: {
             turning: function(event, page, view) {
@@ -564,8 +485,6 @@
                 if ((index + 1) % 2 === 0) $(this).addClass("even");
                 else $(this).addClass("odd");
               });
-
-              preloadAdjacentPages(page);
             },
             turned: function(event, page, view) {
               $(".flipbook-wrapper").removeClass("turning");
@@ -655,11 +574,6 @@
       updateFlipbookLayout();
       // 초기 로딩 시 기둥이 바로 보이도록 보장
       $(".flipbook-wrapper").removeClass("turning");
-      
-      // 초기 페이지들 미리 로드 (첫 3페이지)
-      setTimeout(function() {
-        preloadAdjacentPages(1);
-      }, 300);
 
       $("#flipbook").bind("turned", function (e, page, view) {
         $(".flipbook-wrapper").removeClass("turning");
@@ -670,86 +584,28 @@
           else $(this).addClass("odd");
         });
 
-        // 현재 보이는 페이지의 iframe이 로드되었는지 확인하고 표시
-        const currentIndex = page - 1;
-        const currentPageEl = $("#flipbook .page").eq(currentIndex);
-        const currentIframe = currentPageEl.find("iframe");
-        
-        // 현재 페이지가 로드되지 않았으면 강제로 로드
-        if (currentIframe.length && !currentIframe.attr("data-src-loaded")) {
-          const src = currentIframe.attr("data-src");
-          if (src) {
-            const iframeElement = currentIframe[0];
-            setupIframeLoadHandler(iframeElement);
-            currentIframe.attr("src", src);
-            currentIframe.attr("data-src-loaded", "true");
-          }
-        }
-        
-        if (currentIframe.length && currentIframe.attr("data-ready") !== "true") {
-          // 아직 로드 중이면 로드 완료를 기다림
-          const checkLoad = setInterval(function() {
-            if (currentIframe.attr("data-ready") === "true") {
-              clearInterval(checkLoad);
-            }
-          }, 50);
-          // 최대 3초 후 강제 표시 (로드 실패 대비)
-          setTimeout(function() {
-            clearInterval(checkLoad);
-            if (currentIframe.attr("data-ready") !== "true") {
-              currentIframe.attr("data-ready", "true");
-            }
-          }, 3000);
-        }
-
         // 모바일에서 슬라이더 max를 명시적으로 업데이트
         const isMobileCheck = isMobileView();
         const sliderMax = getSliderMax(isMobileCheck);
         $("#pageSlider").attr("max", sliderMax);
         
         updatePageUI(page, view);
-        preloadAdjacentPages(page);
         setTimeout(updateNavButtonPosition, 100);
       });
 
       $("#prevBtn").click(function() {
-        const currentPage = $("#flipbook").turn("page") || 1;
-        if (currentPage > 1) {
-          // 전환 전에 미리 로드
-          preloadAdjacentPages(currentPage - 1);
-          // 약간의 지연을 두어 로드 시작 후 전환
-          setTimeout(function() {
-            $("#flipbook").turn("previous");
-          }, 50);
-        } else {
-          $("#flipbook").turn("previous");
-        }
+        $("#flipbook").turn("previous");
       });
 
       $("#nextBtn").click(function() {
-        const currentPage = $("#flipbook").turn("page") || 1;
-        if (currentPage < PAGE_FILES.length) {
-          // 전환 전에 미리 로드
-          preloadAdjacentPages(currentPage + 1);
-          // 약간의 지연을 두어 로드 시작 후 전환
-          setTimeout(function() {
-            $("#flipbook").turn("next");
-          }, 50);
-        } else {
-          $("#flipbook").turn("next");
-        }
+        $("#flipbook").turn("next");
       });
 
       $("#pageSlider").on("input change", function () {
         const sliderPos = parseInt($(this).val(), 10);
         const isMobile = isMobileView();
         const targetPage = sliderPosToPage(sliderPos, isMobile);
-        // 목표 페이지를 미리 로드
-        preloadAdjacentPages(targetPage);
-        // 약간의 지연을 두어 로드 시작 후 전환
-        setTimeout(function() {
-          $("#flipbook").turn("page", targetPage);
-        }, 100);
+        $("#flipbook").turn("page", targetPage);
       });
 
       $(window).on("resize", function() {
