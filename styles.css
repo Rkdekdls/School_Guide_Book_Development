@@ -442,7 +442,7 @@ body {
   bottom: 5mm;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-light);
   text-align: center;
   font-weight: 400;
@@ -904,7 +904,7 @@ body.page-title-body {
 .tag::after {
   content: "";
   position: absolute;
-  bottom: -9px;
+  bottom: -8px;
   left: 20px;
   border-width: 9px 7px 0 7px;
   border-style: solid;
@@ -922,7 +922,7 @@ body.page-title-body {
 }
 
 .tag-3 {
-  bottom: calc(370px - 37.795px);
+  bottom: calc(360px - 37.795px);
   right: calc(220px - 37.795px);
 }
 
