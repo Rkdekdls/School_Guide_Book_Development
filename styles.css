@@ -756,13 +756,6 @@ body {
   font-weight: 400;
 }
 
-/* 행 Hover 효과 - 인쇄에는 영향 없음 */
-@media screen {
-  .comparison-table tbody tr:hover {
-    background-color: #eef5ff;
-  }
-}
-
 .comparison-table tr:last-child td {
   border-bottom: none;
 }
