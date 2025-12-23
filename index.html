@@ -42,30 +42,30 @@
       background: linear-gradient(
         to right,
         rgba(0, 0, 0, 0) 0%,
-        rgba(0, 0, 0, 0.08) 30%,
-        rgba(0, 0, 0, 0.15) 45%,
-        rgba(0, 0, 0, 0.25) 50%,
-        rgba(0, 0, 0, 0.15) 55%,
-        rgba(0, 0, 0, 0.08) 70%,
+        rgba(0, 0, 0, 0.05) 30%,
+        rgba(0, 0, 0, 0.10) 45%,
+        rgba(0, 0, 0, 0.18) 50%,
+        rgba(0, 0, 0, 0.10) 55%,
+        rgba(0, 0, 0, 0.05) 70%,
         rgba(0, 0, 0, 0) 100%
       );
       filter: blur(5px);
       opacity: 0.85;
-      z-index: 1;
+      z-index: 0;
       box-shadow: 
-        -2px 0 6px rgba(0, 0, 0, 0.12),
-        2px 0 6px rgba(0, 0, 0, 0.12);
+        -2px 0 6px rgba(0, 0, 0, 0.08),
+        2px 0 6px rgba(0, 0, 0, 0.08);
     }
 
-    /* 넘길 때 기둥 숨김 */
+    /* 페이지 넘김 중에는 그림자 기둥 숨김 (페이지 뒤로 가려짐) */
     .flipbook-wrapper.turning::after {
       opacity: 0;
-      transition: opacity 0.1s ease-in;
+      transition: opacity 0.15s ease-in;
     }
 
-    /* turning이 아닐 때는 transition 없이 즉시 표시 */
+    /* 페이지 넘김이 끝나면 그림자 기둥 다시 표시 */
     .flipbook-wrapper:not(.turning)::after {
-      transition: none;
+      transition: opacity 0.4s ease-out;
     }
 
     /* 단면(모바일)에서는 숨김 */
@@ -209,6 +209,13 @@
     }
     .page-slider:hover { background: #cbd5e1; }
 
+    /* 슬라이더 채워진 부분 파란색으로 */
+    .page-slider::-webkit-slider-runnable-track {
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #3b82f6 var(--slider-progress, 0%), #e2e8f0 var(--slider-progress, 0%));
+    }
+
     .page-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -219,6 +226,7 @@
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
       transition: all 0.2s;
+      margin-top: -6.5px;
     }
     .page-slider::-webkit-slider-thumb:hover {
       background: #2563eb;
@@ -245,6 +253,13 @@
       height: 3px;
       border-radius: 999px;
       background: #e2e8f0;
+    }
+
+    /* Firefox에서 슬라이더 채워진 부분 파란색으로 */
+    .page-slider::-moz-range-progress {
+      height: 3px;
+      border-radius: 999px;
+      background: #3b82f6;
     }
 
     .page-label {
@@ -469,6 +484,24 @@
       return Math.ceil((PAGE_FILES.length - 1) / 2) + 1;
     }
 
+    function updateSliderProgress() {
+      const $slider = $("#pageSlider");
+      const value = parseInt($slider.val(), 10) || 1;
+      const max = parseInt($slider.attr("max"), 10) || 1;
+      const progress = max > 1 ? ((value - 1) / (max - 1)) * 100 : 0;
+      
+      // WebKit 브라우저용 그라디언트 설정
+      const gradient = `linear-gradient(to right, #3b82f6 ${progress}%, #e2e8f0 ${progress}%)`;
+      $slider[0].style.setProperty('--slider-progress', progress + '%');
+      
+      // 직접 스타일 적용 (WebKit)
+      const sliderElement = $slider[0];
+      if (sliderElement.style) {
+        // WebKit의 경우 track에 직접 적용할 수 없으므로, CSS 변수 사용
+        document.documentElement.style.setProperty('--slider-progress', progress + '%');
+      }
+    }
+
     function updatePageUI(page, view) {
       const isMobile = isMobileView();
       const sliderPos = pageToSliderPos(page || 1, isMobile);
@@ -476,6 +509,9 @@
 
       const sliderMax = getSliderMax(isMobile);
       $("#pageSlider").attr("max", sliderMax);
+
+      // 슬라이더 진행률 업데이트
+      updateSliderProgress();
 
       let text = "";
       if (view && view.length > 1) {
@@ -576,7 +612,7 @@
           autoCenter: true,
           elevation: 0,
           gradients: false,
-          duration: 1200,
+          duration: 1000,
           acceleration: true,
           when: {
             turning: function(event, page, view) {
@@ -826,6 +862,7 @@
         const sliderPos = parseInt($(this).val(), 10);
         const isMobile = isMobileView();
         const targetPage = sliderPosToPage(sliderPos, isMobile);
+        updateSliderProgress();
         $("#flipbook").turn("page", targetPage);
       });
 
@@ -836,6 +873,7 @@
         const currentPage = $("#flipbook").turn("page") || 1;
         const currentSliderPos = pageToSliderPos(currentPage, isMobile);
         $("#pageSlider").val(currentSliderPos);
+        updateSliderProgress();
 
         updateFlipbookLayout();
 
