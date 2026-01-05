@@ -24,11 +24,12 @@ School_Guide_Book_Development/
 │   │       ├── part1-06.html # 파트1 페이지 6
 │   │       └── part1-07.html # 파트1 페이지 7
 │   └── 03.부록/
-│       ├── appendix-01.html  # 부록 페이지 1
-│       ├── appendix-02.html  # 부록 페이지 2
-│       ├── appendix-03.html  # 부록 페이지 3
-│       ├── appendix-04.html  # 부록 페이지 4
-│       └── appendix-05.html  # 부록 페이지 5
+│       └── 001.부록1/
+│           ├── appendix1-01.html  # 부록1 페이지 1
+│           ├── appendix1-02.html  # 부록1 페이지 2
+│           ├── appendix1-03.html  # 부록1 페이지 3
+│           ├── appendix1-04.html  # 부록1 페이지 4
+│           └── appendix1-05.html  # 부록1 페이지 5
 ├── styles.css                # 공통 스타일시트
 └── README.md                 # 프로젝트 설명서
 ```
