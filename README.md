@@ -27,7 +27,8 @@ School_Guide_Book_Development/
 │       ├── appendix-01.html  # 부록 페이지 1
 │       ├── appendix-02.html  # 부록 페이지 2
 │       ├── appendix-03.html  # 부록 페이지 3
-│       └── appendix-04.html  # 부록 페이지 4
+│       ├── appendix-04.html  # 부록 페이지 4
+│       └── appendix-05.html  # 부록 페이지 5
 ├── styles.css                # 공통 스타일시트
 └── README.md                 # 프로젝트 설명서
 ```
