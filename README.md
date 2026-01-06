@@ -57,3 +57,6 @@ School_Guide_Book_Development/
 ## 라이선스
 - **라이선스**: (주) 메가스터디교육
 - **개발자**: 입시전략연구소 강다인
+
+---
+*Last updated: 2026*
