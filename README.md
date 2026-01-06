@@ -10,24 +10,24 @@ School_Guide_Book_Development/
 ├── index.html                # 플립북 메인 코드
 ├── styles.css                # 공통 스타일 시트
 ├── README.md                 # 프로젝트 설명서
-├── pages/                    # 페이지 파일 모음
-│   ├── 00.표지/
-│   │   └── title.html
-│   ├── 01.목차/
-│   │   ├── index-01.html
-│   │   └── index-02.html
-│   ├── 02.파트/
-│   │   └── 001.파트1/
-│   │       └── part1-*.html 
-│   └── 03.부록/
-│       ├── 001.부록1/
-│       │   └── appendix1-*.html 
-│       ├── 002.부록2/
-│       │   └── appendix2-*.html
-│       ├── 003.부록3/
-│       │   └── appendix3-*.html 
-│       └── 004.부록4/
-│           └── appendix4-*.html 
+└── pages/                    # 페이지 파일 모음
+    ├── 00.표지/
+    │   └── title.html
+    ├── 01.목차/
+    │   ├── index-01.html
+    │   └── index-02.html
+    ├── 02.파트/
+    │   └── 001.파트1/
+    │       └── part1-*.html
+    └── 03.부록/
+        ├── 001.부록1/
+        │   └── appendix1-*.html 
+        ├── 002.부록2/
+        │   └── appendix2-*.html 
+        ├── 003.부록3/
+        │   └── appendix3-*.html 
+        └── 004.부록4/
+            └── appendix4-*.html 
 ```
 
 ## 사용 방법
