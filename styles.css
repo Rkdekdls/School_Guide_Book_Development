@@ -628,6 +628,7 @@ body {
   margin-top: 0;
   margin-bottom: 0;
   line-height: 1.7;
+  text-align: justify;
 }
 
 /* 박스 내부 제목 스타일 통일 */
@@ -864,10 +865,11 @@ body.page-title-body {
   padding: 6px 10px;
   background: #1653c9;
   color: #fff;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   border-radius: 3px;
   margin-bottom: 12px;
+  letter-spacing: 0.05em;
 }
 
 .title-strip .title-vertical {
